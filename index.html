@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hotel Peacock Anand</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px}
+:root{
+--rm-bg:#f1f2f4;--rm-surface:#ffffff;--rm-card:#ffffff;--rm-border:#e1e4ea;
+--rm-text:#262a33;--rm-muted:#767b88;
+--rm-accent:#d4a017;--rm-accent2:#f0c75e;--rm-accent3:#3fa66c;--rm-blue:#6fb3e0;
+--rm-green:#3fa66c;--rm-red:#dc2626;--rm-yellow:#d9a83a;--rm-gray:#6b7280;
+--rm-gradient:linear-gradient(135deg,var(--rm-accent) 0%,var(--rm-accent2) 38%,var(--rm-accent3) 70%,var(--rm-blue) 100%);
+--rm-shadow:0 1px 3px rgba(30,34,44,.06);
+}
+#hms{display:flex;height:100vh;min-height:600px;background:var(--rm-bg);color:var(--rm-text);font-size:13px;position:relative}
+.sidebar{width:200px;min-width:200px;background:var(--rm-surface);border-right:1px solid var(--rm-border);display:flex;flex-direction:column;padding:0}
+.logo{padding:18px 16px 16px;border-bottom:3px solid transparent;border-image:var(--rm-gradient) 1}
+.logo-title{font-size:15px;font-weight:500;color:var(--rm-text)}
+.logo-sub{font-size:11px;color:var(--rm-muted);margin-top:2px}
+.nav{padding:12px 8px;flex:1}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;color:var(--rm-muted);font-size:13px;margin-bottom:2px;border:none;background:none;width:100%;text-align:left}
+.nav-item:hover{background:rgba(212,160,23,.08);color:var(--rm-text)}
+.nav-item.active{background:rgba(212,160,23,.12);color:var(--rm-accent)}
+.nav-item i{font-size:16px}
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.topbar{background:var(--rm-surface);border-bottom:1px solid var(--rm-border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 4px rgba(30,34,44,.04);border-top:3px solid transparent;border-image:var(--rm-gradient) 1}
+.topbar-title{font-size:16px;font-weight:500}
+.search-wrap{display:flex;align-items:center;gap:8px;background:var(--rm-card);border:1px solid var(--rm-border);border-radius:8px;padding:6px 12px}
+.search-wrap input{background:none;border:none;outline:none;color:var(--rm-text);font-size:13px;width:200px}
+.search-wrap input::placeholder{color:var(--rm-muted)}
+.content{padding:16px 20px;flex:1}
+.stats-row{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:18px}
+.stat-card{background:var(--rm-card);border:1px solid var(--rm-border);border-radius:10px;padding:12px 14px;box-shadow:var(--rm-shadow)}
+.stat-label{font-size:11px;color:var(--rm-muted);margin-bottom:6px}
+.stat-val{font-size:20px;font-weight:500;color:var(--rm-text)}
+.stat-val.green{color:var(--rm-green)}
+.stat-val.red{color:var(--rm-red)}
+.stat-val.yellow{color:var(--rm-yellow)}
+.stat-val.accent{color:var(--rm-accent)}
+.stat-val.accent2{color:var(--rm-accent2)}
+.stat-val.accent3{color:var(--rm-accent3)}
+.floor-section{margin-bottom:18px}
+.floor-label{font-size:12px;font-weight:500;color:var(--rm-muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.8px}
+.rooms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.room-card{background:var(--rm-card);border:1.5px solid var(--rm-border);border-radius:10px;padding:12px;cursor:pointer;transition:border-color .15s,transform .1s,box-shadow .15s;box-shadow:var(--rm-shadow)}
+.room-card:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(30,34,44,.1)}
+.room-card.available{border-color:rgba(63,166,108,.35)}
+.room-card.occupied{border-color:rgba(111,179,224,.6);background:#def0fc}
+.room-card.checkout{border-color:rgba(217,168,58,.6);background:#fffbe6}
+.room-card.checkout-clearing{border-color:rgba(217,168,58,.3);background:#ffffff}
+.room-card.maintenance{border-color:rgba(107,114,128,.35)}
+.room-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.room-num{font-size:15px;font-weight:500}
+.status-dot{width:8px;height:8px;border-radius:50%}
+.status-dot.available{background:var(--rm-green)}
+.status-dot.occupied{background:#6fb3e0}
+.status-dot.checkout{background:var(--rm-yellow)}
+.status-dot.checkout-clearing{background:#ccc}
+.status-dot.maintenance{background:var(--rm-gray)}
+.room-status{font-size:10px;font-weight:500;padding:2px 8px;border-radius:20px;margin-bottom:8px;display:inline-block}
+.room-status.available{background:rgba(63,166,108,.12);color:var(--rm-green)}
+.room-status.occupied{background:rgba(111,179,224,.2);color:#2c6ea3}
+.room-status.checkout{background:rgba(217,168,58,.12);color:var(--rm-yellow)}
+.room-status.checkout-clearing{background:rgba(200,200,200,.18);color:#888}
+.room-status.maintenance{background:rgba(107,114,128,.12);color:var(--rm-gray)}
+.room-info{font-size:11px;color:var(--rm-muted);line-height:1.6}
+.room-info .name{color:var(--rm-text);font-weight:500;font-size:12px}
+.room-actions{display:flex;gap:6px;margin-top:10px}
+.btn{border:none;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:inherit;font-weight:500}
+.btn-checkin{background:rgba(212,160,23,.1);color:var(--rm-accent)}
+.btn-checkin:hover{background:rgba(212,160,23,.2)}
+.btn-checkout{background:rgba(217,168,58,.15);color:var(--rm-yellow)}
+.btn-checkout:hover{background:rgba(217,168,58,.28)}
+.btn-maint{background:rgba(107,114,128,.12);color:var(--rm-gray)}
+.btn-invoice{background:rgba(111,179,224,.16);color:#2c6ea3}
+.btn-invoice:hover{background:rgba(111,179,224,.3)}
+.btn-primary{background:var(--rm-gradient);color:#fff;padding:8px 20px;font-size:13px;border-radius:8px;border:none;cursor:pointer;font-family:inherit}
+.btn-primary:hover{opacity:.92}
+.chart-card{background:var(--rm-card);border:1px solid var(--rm-border);border-radius:10px;padding:10px 12px;box-shadow:var(--rm-shadow)}
+.chart-card .section-title{font-size:11px;font-weight:500;margin-bottom:6px;color:var(--rm-muted)}
+.chart-canvas-wrap{position:relative;height:90px}
+.charts-row{display:grid;grid-template-columns:repeat(2,minmax(0,260px));gap:12px;margin-top:18px}
+.overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:50;align-items:center;justify-content:center}
+.overlay.show{display:flex}
+.modal{background:var(--rm-surface);border:1px solid var(--rm-border);border-radius:14px;padding:24px;width:400px;max-width:95%;max-height:90vh;overflow-y:auto;box-shadow:0 14px 40px rgba(30,34,44,.16)}
+.modal-title{font-size:15px;font-weight:500;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center}
+.modal-close{background:none;border:none;color:var(--rm-muted);cursor:pointer;font-size:18px;padding:2px}
+.form-group{margin-bottom:14px}
+.form-label{font-size:11px;color:var(--rm-muted);margin-bottom:5px;display:block}
+.form-input{width:100%;background:var(--rm-card);border:1px solid var(--rm-border);border-radius:7px;padding:8px 12px;color:var(--rm-text);font-size:13px;outline:none;font-family:inherit}
+.form-input:focus{border-color:var(--rm-accent)}
+.form-input option{background:var(--rm-card)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.section-view{display:none}
+.section-view.active{display:block}
+.history-table{width:100%;border-collapse:collapse;font-size:12px}
+.history-table th{text-align:left;padding:8px 12px;color:var(--rm-muted);font-weight:500;border-bottom:1px solid var(--rm-border)}
+.history-table td{padding:8px 12px;border-bottom:1px solid var(--rm-border)}
+.history-table tr:hover td{background:rgba(212,160,23,.05)}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:500}
+.badge-green{background:rgba(63,166,108,.12);color:var(--rm-green)}
+.badge-red{background:rgba(239,68,68,.12);color:var(--rm-red)}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--rm-card);border:1px solid var(--rm-border);border-radius:10px;padding:12px 16px;font-size:13px;z-index:100;opacity:0;transform:translateY(10px);transition:.3s;pointer-events:none;border-left:3px solid var(--rm-green)}
+.toast.show{opacity:1;transform:translateY(0)}
+.invoice-head{text-align:center;margin-bottom:16px;padding-bottom:14px;border-bottom:1px dashed var(--rm-border)}
+.invoice-hotel{font-size:18px;font-weight:600;color:var(--rm-accent);display:flex;align-items:center;justify-content:center;gap:8px}
+.invoice-sub{font-size:11px;color:var(--rm-muted);margin-top:3px}
+.no-print{}
+@media print{
+  body *{visibility:hidden}
+  #invoiceContent,#invoiceContent *{visibility:visible}
+  #invoiceContent{position:absolute;left:0;top:0;width:100%;padding:10px}
+  .no-print{display:none!important}
+}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.section-title{font-size:15px;font-weight:500}
+.filter-row{display:flex;gap:8px;align-items:center}
+.filter-select{background:var(--rm-card);border:1px solid var(--rm-border);border-radius:7px;padding:6px 10px;color:var(--rm-text);font-size:12px;outline:none}
+.summary-box{background:var(--rm-card);border:1px solid var(--rm-border);border-radius:10px;padding:14px;margin-bottom:16px}
+.summary-row{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:1px solid var(--rm-border)}
+.summary-row:last-child{border-bottom:none;font-weight:500;font-size:14px;margin-top:4px}
+.summary-row span:last-child{color:var(--rm-accent)}
+textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
+
+/* ---- Tax Invoice (Generate Bill) layout ---- */
+:root{--inv-navy:#16284f;--inv-navy2:#1f3a73;--inv-line:#dfe4ee}
+.inv-wrap{font-family:Georgia,'Times New Roman',serif;color:var(--inv-navy);padding:4px 2px}
+.inv-ornament{text-align:center;font-size:16px;letter-spacing:6px;color:var(--rm-accent2)}
+.inv-hr{border:none;border-top:2px solid var(--rm-accent2);margin:6px 0 14px}
+.inv-title{text-align:center;font-size:27px;font-weight:700;letter-spacing:1px;color:var(--inv-navy)}
+.inv-address{text-align:center;font-size:10.5px;color:var(--inv-navy2);margin-top:8px;line-height:1.6}
+.inv-contact{text-align:center;font-size:10.5px;color:var(--inv-navy2);margin-top:4px}
+.inv-topline{display:flex;justify-content:space-between;align-items:center;margin-top:16px;gap:10px}
+.inv-gstbox{font-size:11px;line-height:2}
+.inv-gstbox b{display:inline-block;width:88px}
+.inv-taxbadge{background:var(--inv-navy);color:#fff;padding:8px 18px;border-radius:6px;font-weight:700;font-size:12px;letter-spacing:.5px;white-space:nowrap}
+.inv-boxes{display:grid;grid-template-columns:1.25fr 1fr;gap:14px;margin-top:14px}
+.inv-box{border:1.5px solid var(--inv-navy2);border-radius:10px;padding:12px 14px}
+.inv-field{display:flex;font-size:11px;margin-bottom:7px}
+.inv-field b{width:108px;flex-shrink:0;color:var(--inv-navy);font-weight:700}
+.inv-field span{flex:1;border-bottom:1px dotted #b9c2d6;padding-bottom:2px;word-break:break-word}
+.inv-table-wrap{margin-top:16px;border:1.5px solid var(--inv-navy2);border-radius:10px;overflow:hidden}
+.inv-table{width:100%;border-collapse:collapse;font-size:10.5px}
+.inv-table th{background:var(--inv-navy);color:#fff;padding:8px 5px;font-weight:600;font-size:9.5px;text-align:center;white-space:nowrap}
+.inv-table td{padding:7px 5px;text-align:center;border-top:1px solid var(--inv-line)}
+.inv-table tbody tr:first-child td{border-top:none}
+.inv-total-row td{font-weight:700;background:#f3f5fb;border-top:2px solid var(--inv-navy2)!important}
+.inv-total-row td:first-child{text-align:left;padding-left:10px}
+.inv-bottom{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px;align-items:start}
+.inv-pill-wrap{position:relative;border:1.5px solid var(--inv-navy2);border-radius:10px;padding:18px 14px 12px;margin-top:10px}
+.inv-pill{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--inv-navy);color:#fff;font-size:9.5px;font-weight:700;padding:5px 16px;border-radius:20px;letter-spacing:.5px;white-space:nowrap}
+.inv-amt-row{display:flex;justify-content:space-between;font-size:11.5px;padding:5px 0;border-bottom:1px dashed var(--inv-line)}
+.inv-amt-row:last-child{border-bottom:none}
+.inv-net-bar{display:flex;justify-content:space-between;background:var(--inv-navy);color:#fff;border-radius:6px;padding:8px 12px;margin-top:8px;font-weight:700;font-size:12.5px}
+.inv-service-grid{display:grid;grid-template-columns:repeat(4,1fr);text-align:center;gap:4px;margin-top:4px}
+.inv-service-col i{font-size:17px;color:var(--inv-navy)}
+.inv-service-col .lbl{font-size:8.5px;font-weight:700;color:var(--inv-navy);margin-top:4px;letter-spacing:.3px}
+.inv-service-col .val{font-size:10.5px;margin-top:6px;border-top:1px solid var(--inv-line);padding-top:6px}
+.inv-tax-box{border:1.5px solid var(--inv-navy2);border-radius:10px;padding:12px 14px;margin-top:10px;font-size:11.5px}
+.inv-footer{display:flex;justify-content:space-between;margin-top:22px;padding-top:14px;border-top:1px dashed var(--rm-accent2);font-size:11px}
+@media print{.inv-wrap{padding:0}}
+</style>
+</head>
+<body>
+<div id="hms">
+
+<nav class="sidebar">
+  <div class="logo">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:36px;height:36px;border-radius:10px;background:var(--rm-gradient);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <i class="ti ti-building-hotel" style="font-size:18px;color:#fff"></i>
+      </div>
+      <div>
+        <div class="logo-title">Hotel Peacock Anand</div>
+        <div class="logo-sub">Anand, Gujarat</div>
+      </div>
+    </div>
+  </div>
+  <div class="nav">
+    <button class="nav-item active" onclick="showSection('dashboard',this)"><i class="ti ti-layout-dashboard"></i> Dashboard</button>
+    <button class="nav-item" onclick="showSection('rooms',this)"><i class="ti ti-door"></i> Room Layout</button>
+    <button class="nav-item" onclick="showSection('checkin',this)"><i class="ti ti-login"></i> Check-in</button>
+    <button class="nav-item" onclick="showSection('customers',this)"><i class="ti ti-users"></i> Customers</button>
+    <button class="nav-item" onclick="showSection('history',this)"><i class="ti ti-history"></i> Booking History</button>
+    <button class="nav-item" onclick="showSection('revenue',this)"><i class="ti ti-report-money"></i> Revenue</button>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="topbarTitle">Dashboard Overview</div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="search-wrap">
+        <i class="ti ti-search" style="color:var(--rm-muted);font-size:14px"></i>
+        <input type="text" placeholder="Search by mobile..." id="globalSearch" onkeydown="if(event.key==='Enter')globalSearchFn()">
+      </div>
+      <span style="font-size:12px;color:var(--rm-muted)" id="clockEl"></span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <div class="section-view active" id="sec-dashboard">
+      <div class="stats-row" id="statsRow"></div>
+      <div class="floor-section">
+        <div class="floor-label"><i class="ti ti-stairs-up"></i> 2nd Floor — Rooms 201–207</div>
+        <div class="rooms-grid" id="floor2Grid"></div>
+      </div>
+      <div class="floor-section">
+        <div class="floor-label"><i class="ti ti-stairs-up"></i> 3rd Floor — Rooms 301–308</div>
+        <div class="rooms-grid" id="floor3Grid"></div>
+      </div>
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="section-title">Room Status Overview</div>
+          <div class="chart-canvas-wrap"><canvas id="roomStatusChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="section-title">Collected vs Pending</div>
+          <div class="chart-canvas-wrap"><canvas id="dashRevenueChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-view" id="sec-rooms">
+      <div class="floor-section">
+        <div class="floor-label">2nd Floor — Rooms 201–207</div>
+        <div class="rooms-grid" id="floor2GridB"></div>
+      </div>
+      <div class="floor-section">
+        <div class="floor-label">3rd Floor — Rooms 301–308</div>
+        <div class="rooms-grid" id="floor3GridB"></div>
+      </div>
+    </div>
+
+    <div class="section-view" id="sec-checkin">
+      <div style="max-width:480px">
+        <div class="section-header"><div class="section-title">Quick Check-in</div></div>
+        <div style="background:var(--rm-card);border:1px solid var(--rm-border);border-radius:12px;padding:20px">
+          <div class="form-group">
+            <label class="form-label">Customer Name *</label>
+            <input class="form-input" id="ci-name" placeholder="Full name">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Mobile Number *</label>
+              <input class="form-input" id="ci-mobile" placeholder="10-digit mobile" maxlength="10" oninput="checkExisting()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">ID Proof</label>
+              <input class="form-input" id="ci-id" placeholder="Aadhar / PAN / Passport">
+            </div>
+          </div>
+          <div id="existingCustomerBox" style="display:none;background:rgba(212,160,23,.06);border:1px solid rgba(212,160,23,.25);border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px">
+            <div style="color:var(--rm-accent);font-weight:500;margin-bottom:4px"><i class="ti ti-user-check"></i> Returning customer found</div>
+            <div id="existingCustomerInfo"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Select Room *</label>
+              <select class="form-input" id="ci-room"></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Booking Price (₹) *</label>
+              <input class="form-input" id="ci-price" type="number" placeholder="1200">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Check-in Date & Time</label>
+            <input class="form-input" id="ci-datetime" type="datetime-local">
+          </div>
+          <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="doCheckin()">
+            <i class="ti ti-login"></i> Confirm Booking
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-view" id="sec-customers">
+      <div class="section-header">
+        <div class="section-title">Customer Database</div>
+        <div class="filter-row">
+          <div class="search-wrap">
+            <i class="ti ti-search" style="color:var(--rm-muted);font-size:14px"></i>
+            <input type="text" placeholder="Search mobile..." id="custSearch" oninput="renderCustomerTable()">
+          </div>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="history-table" id="custTable">
+          <thead><tr>
+            <th>Name</th><th>Mobile</th><th>ID Proof</th><th>Last Room</th><th>Bookings</th><th>Total Spent</th><th>Action</th><th>Invoice</th>
+          </tr></thead>
+          <tbody id="custTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section-view" id="sec-history">
+      <div class="section-header">
+        <div class="section-title">Booking History</div>
+        <div class="filter-row">
+          <select class="filter-select" id="histFilter" onchange="renderHistoryTable()">
+            <option value="all">All</option>
+            <option value="active">Active</option>
+            <option value="checked-out">Checked Out</option>
+          </select>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="history-table">
+          <thead><tr>
+            <th>Room</th><th>Customer</th><th>Mobile</th><th>Check-in</th><th>Check-out</th><th>Price</th><th>Status</th><th>Invoice</th>
+          </tr></thead>
+          <tbody id="histTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section-view" id="sec-revenue">
+      <div class="section-title" style="margin-bottom:14px">Revenue Summary</div>
+      <div class="stats-row" style="grid-template-columns:repeat(3,1fr);max-width:500px" id="revStats"></div>
+      <div class="chart-card" style="max-width:760px;margin-top:16px">
+        <div class="section-title">Revenue by Room</div>
+        <canvas id="roomRevenueChart" height="120"></canvas>
+      </div>
+      <div style="margin-top:16px">
+        <div style="font-size:12px;color:var(--rm-muted);margin-bottom:10px">Payment Records</div>
+        <div style="overflow-x:auto">
+          <table class="history-table">
+            <thead><tr><th>Room</th><th>Customer</th><th>Amount</th><th>Check-in</th><th>Check-out</th><th>Status</th></tr></thead>
+            <tbody id="revTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="overlay" id="checkoutOverlay">
+  <div class="modal" id="checkoutModal"></div>
+</div>
+
+<div class="overlay" id="invoiceOverlay">
+  <div class="modal" id="invoiceModal" style="width:680px;max-width:97vw"></div>
+</div>
+
+<div class="overlay" id="billFormOverlay">
+  <div class="modal" id="billFormModal" style="width:560px;max-width:95vw"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+</div>
+
+<script>
+const ROOMS=[201,202,203,204,205,206,207,301,302,303,304,305,306,307,308];
+let roomData={};
+let bookings=[];
+let customers={};
+
+// ── LocalStorage Save / Load ──────────────────────────────
+function saveData(){
+  try{
+    localStorage.setItem('hms_roomData',JSON.stringify(roomData));
+    localStorage.setItem('hms_bookings',JSON.stringify(bookings));
+    localStorage.setItem('hms_customers',JSON.stringify(customers));
+  }catch(e){console.warn('Save failed',e);}
+}
+
+function loadData(){
+  try{
+    const rd=localStorage.getItem('hms_roomData');
+    const bk=localStorage.getItem('hms_bookings');
+    const cu=localStorage.getItem('hms_customers');
+    if(rd)roomData=JSON.parse(rd);
+    if(bk)bookings=JSON.parse(bk);
+    if(cu)customers=JSON.parse(cu);
+    // Restart checkout timers for rooms that had checkout in progress
+    ROOMS.forEach(r=>{
+      const d=roomData[r];
+      if(!d)return;
+      if(d.status==='checkout'&&d._checkoutTime){
+        const elapsed=Date.now()-d._checkoutTime;
+        const rem1=30*60*1000-elapsed;
+        if(rem1>0){
+          setTimeout(()=>{
+            if(roomData[r]&&roomData[r].status==='checkout'){
+              roomData[r].status='checkout-clearing';roomData[r]._clearTime=Date.now();
+              saveData();renderAll();showToast(`Room ${r} — Cleaning in progress`);
+              setTimeout(()=>{if(roomData[r]&&roomData[r].status==='checkout-clearing'){roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};saveData();renderAll();showToast(`Room ${r} is now available`);}},30*60*1000);
+            }
+          },rem1);
+        }else{
+          roomData[r].status='checkout-clearing';
+          roomData[r]._clearTime=roomData[r]._clearTime||Date.now();
+          const elapsed2=roomData[r]._clearTime?Date.now()-roomData[r]._clearTime:0;
+          const rem2=30*60*1000-elapsed2;
+          if(rem2>0){
+            setTimeout(()=>{if(roomData[r]&&roomData[r].status==='checkout-clearing'){roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};saveData();renderAll();showToast(`Room ${r} is now available`);}},rem2);
+          }else{
+            roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};
+          }
+        }
+      }else if(d.status==='checkout-clearing'&&d._clearTime){
+        const elapsed=Date.now()-d._clearTime;
+        const rem=30*60*1000-elapsed;
+        if(rem>0){
+          setTimeout(()=>{if(roomData[r]&&roomData[r].status==='checkout-clearing'){roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};saveData();renderAll();showToast(`Room ${r} is now available`);}},rem);
+        }else{
+          roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};
+        }
+      }
+    });
+  }catch(e){console.warn('Load failed',e);}
+}
+// ─────────────────────────────────────────────────────────
+
+function initRooms(){
+  loadData();
+  ROOMS.forEach(r=>{if(!roomData[r])roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};});
+  buildCustomers();
+}
+
+function buildCustomers(){
+  bookings.forEach(b=>{
+    if(!customers[b.mobile])customers[b.mobile]={name:b.customer,mobile:b.mobile,id:b.id,bookings:[]};
+    if(!customers[b.mobile].bookings.find(x=>x.room===b.room&&x.checkin===b.checkin))
+      customers[b.mobile].bookings.push({room:b.room,checkin:b.checkin,price:b.price,status:b.status});
+  });
+}
+
+function getStats(){
+  const all=ROOMS.length,avail=ROOMS.filter(r=>roomData[r].status==='available').length;
+  const occ=ROOMS.filter(r=>roomData[r].status==='occupied').length,co=ROOMS.filter(r=>roomData[r].status==='checkout').length;
+  const today=new Date().toISOString().split('T')[0];
+  const todayIn=bookings.filter(b=>b.checkin&&b.checkin.startsWith(today)&&b.status==='active').length;
+  const todayOut=bookings.filter(b=>b.checkout&&b.checkout.startsWith(today)).length;
+  const rev=bookings.filter(b=>b.status==='checked-out').reduce((s,b)=>s+b.price,0);
+  return{all,avail,occ,co,todayIn,todayOut,rev};
+}
+
+function renderStats(){
+  const s=getStats();
+  document.getElementById('statsRow').innerHTML=`
+    <div class="stat-card" style="border-top:3px solid var(--rm-accent)"><div class="stat-label"><i class="ti ti-door"></i> Total Rooms</div><div class="stat-val">${s.all}</div></div>
+    <div class="stat-card" style="border-top:3px solid var(--rm-green)"><div class="stat-label"><i class="ti ti-circle-check"></i> Available</div><div class="stat-val green">${s.avail}</div></div>
+    <div class="stat-card" style="border-top:3px solid var(--rm-red)"><div class="stat-label"><i class="ti ti-user"></i> Occupied</div><div class="stat-val red">${s.occ}</div></div>
+    <div class="stat-card" style="border-top:3px solid var(--rm-yellow)"><div class="stat-label"><i class="ti ti-clock"></i> Checkout Due</div><div class="stat-val yellow">${s.co}</div></div>
+    <div class="stat-card" style="border-top:3px solid var(--rm-accent2)"><div class="stat-label"><i class="ti ti-calendar-plus"></i> Today's Check-in</div><div class="stat-val accent2">${s.todayIn}</div></div>
+    <div class="stat-card" style="border-top:3px solid var(--rm-accent3)"><div class="stat-label"><i class="ti ti-report-money"></i> Revenue</div><div class="stat-val accent3">₹${s.rev.toLocaleString('en-IN')}</div></div>
+  `;
+}
+
+function statusLabel(s){return{available:'Available',occupied:'Occupied',checkout:'Checkout Due','checkout-clearing':'Clearing',maintenance:'Maintenance'}[s]||s;}
+
+function roomCardHTML(r,d){
+  let actions='';
+  if(d.status==='available')actions=`<button class="btn btn-checkin" onclick="goCheckin(${r})"><i class="ti ti-login"></i> Check-in</button><button class="btn btn-maint" onclick="setMaintenance(${r})"><i class="ti ti-tool"></i></button>`;
+  else if(d.status==='occupied'||d.status==='checkout')actions=`<button class="btn btn-checkout" onclick="openCheckoutModal(${r})"><i class="ti ti-logout"></i> Checkout</button><button class="btn btn-invoice" onclick="openInvoiceForRoom(${r})"><i class="ti ti-receipt"></i> Bill</button>`;
+  else if(d.status==='checkout-clearing')actions=`<button class="btn btn-checkin" onclick="setAvailable(${r})"><i class="ti ti-check"></i> Mark Ready</button>`;
+  else if(d.status==='maintenance')actions=`<button class="btn btn-checkin" onclick="setAvailable(${r})"><i class="ti ti-check"></i> Mark Ready</button>`;
+  const info=d.customer?`<div class="room-info"><div class="name">${d.customer}</div><div><i class="ti ti-phone" style="font-size:11px"></i> ${d.mobile}</div><div><i class="ti ti-currency-rupee" style="font-size:11px"></i> ₹${d.price?.toLocaleString('en-IN')}</div><div><i class="ti ti-calendar" style="font-size:11px"></i> ${d.checkin?fmtDT(d.checkin):''}</div></div>`:`<div class="room-info" style="color:var(--rm-muted)">Room is ${statusLabel(d.status).toLowerCase()}</div>`;
+  return`<div class="room-card ${d.status}"><div class="room-header"><span class="room-num"><i class="ti ti-door"></i> ${r}</span><span class="status-dot ${d.status}"></span></div><div class="room-status ${d.status}">${statusLabel(d.status)}</div>${info}<div class="room-actions">${actions}</div></div>`;
+}
+
+function renderRooms(g2,g3){
+  document.getElementById(g2).innerHTML=ROOMS.filter(r=>r<300).map(r=>roomCardHTML(r,roomData[r])).join('');
+  document.getElementById(g3).innerHTML=ROOMS.filter(r=>r>=300).map(r=>roomCardHTML(r,roomData[r])).join('');
+}
+
+function renderAll(){
+  renderStats();renderRooms('floor2Grid','floor3Grid');renderRooms('floor2GridB','floor3GridB');
+  renderRevStats();renderHistoryTable();renderCustomerTable();populateRoomSelect();renderCharts();
+}
+
+function populateRoomSelect(){
+  const sel=document.getElementById('ci-room');
+  sel.innerHTML=ROOMS.filter(r=>roomData[r].status==='available').map(r=>`<option value="${r}">Room ${r}</option>`).join('');
+}
+
+function fmtDT(s){if(!s)return'';const d=new Date(s);return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short'})+' '+d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});}
+
+function goCheckin(r){showSection('checkin',document.querySelectorAll('.nav-item')[2]);setTimeout(()=>{document.getElementById('ci-room').value=r;},50);}
+
+function openCheckoutModal(r){
+  const d=roomData[r];
+  document.getElementById('checkoutModal').innerHTML=`
+    <div class="modal-title">Checkout — Room ${r}<button class="modal-close" onclick="closeOverlay('checkoutOverlay')"><i class="ti ti-x"></i></button></div>
+    <div class="summary-box">
+      <div class="summary-row"><span>Customer</span><span>${d.customer}</span></div>
+      <div class="summary-row"><span>Mobile</span><span>${d.mobile}</span></div>
+      <div class="summary-row"><span>Check-in</span><span>${fmtDT(d.checkin)}</span></div>
+      <div class="summary-row"><span>Check-out</span><span>${fmtDT(new Date().toISOString())}</span></div>
+      <div class="summary-row"><span>Total Bill</span><span>₹${d.price?.toLocaleString('en-IN')}</span></div>
+    </div>
+    <div class="form-group"><label class="form-label">Payment Mode</label><select class="form-input" id="co-pay"><option>Cash</option><option>UPI</option><option>Card</option><option>Net Banking</option></select></div>
+    <div class="form-group"><label class="form-label">Remarks</label><input class="form-input" id="co-note" placeholder="Optional remarks..."></div>
+    <button class="btn btn-invoice" style="width:100%;margin-bottom:8px" onclick="openInvoiceForRoom(${r})"><i class="ti ti-receipt"></i> Generate Bill / Print Invoice</button>
+    <button class="btn btn-primary" style="width:100%;margin-top:4px;background:var(--rm-yellow);color:#111" onclick="doCheckout(${r})"><i class="ti ti-logout"></i> Confirm Checkout</button>
+  `;
+  document.getElementById('checkoutOverlay').classList.add('show');
+}
+
+function closeOverlay(id){document.getElementById(id).classList.remove('show');}
+
+function doCheckin(){
+  const name=document.getElementById('ci-name').value.trim(),mob=document.getElementById('ci-mobile').value.trim();
+  const idp=document.getElementById('ci-id').value.trim(),room=parseInt(document.getElementById('ci-room').value);
+  const price=parseInt(document.getElementById('ci-price').value)||0,dt=document.getElementById('ci-datetime').value||new Date().toISOString().slice(0,16);
+  if(!name||!mob||!room||!price){showToast('Please fill all required fields','red');return;}
+  if(!/^\d{10}$/.test(mob)){showToast('Enter a valid 10-digit mobile number','red');return;}
+  roomData[room]={status:'occupied',customer:name,mobile:mob,price,checkin:dt,id:idp};
+  bookings.push({room,customer:name,mobile:mob,price,checkin:dt,checkout:null,status:'active',id:idp});
+  if(!customers[mob])customers[mob]={name,mobile:mob,id:idp,bookings:[]};
+  customers[mob].bookings.push({room,checkin:dt,price,status:'active'});
+  document.getElementById('ci-name').value='';document.getElementById('ci-mobile').value='';
+  document.getElementById('ci-id').value='';document.getElementById('ci-price').value='';
+  document.getElementById('existingCustomerBox').style.display='none';
+  saveData();renderAll();showToast(`Room ${room} booked for ${name}`);
+}
+
+function doCheckout(r){
+  const d=roomData[r],coTime=new Date().toISOString().slice(0,16);
+  const b=bookings.find(x=>x.room===r&&(x.status==='active'||x.status==='checkout-pending'));
+  if(b){b.checkout=coTime;b.status='checked-out';}
+  if(customers[d.mobile]){const cb=customers[d.mobile].bookings.find(x=>x.room===r);if(cb)cb.status='checked-out';}
+  // Phase 1: light yellow (checkout) for 30 minutes
+  roomData[r]={status:'checkout',customer:null,mobile:null,price:null,checkin:null,id:null,_checkoutTime:Date.now()};
+  saveData();closeOverlay('checkoutOverlay');renderAll();showToast(`Room ${r} checkout complete`);
+  // After 30 min → phase 2: light white (checkout-clearing)
+  setTimeout(()=>{
+    if(roomData[r]&&roomData[r].status==='checkout'){
+      roomData[r].status='checkout-clearing';roomData[r]._clearTime=Date.now();
+      saveData();renderAll();showToast(`Room ${r} — Cleaning in progress`);
+      // After another 30 min → available (white/normal)
+      setTimeout(()=>{
+        if(roomData[r]&&roomData[r].status==='checkout-clearing'){
+          roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};
+          saveData();renderAll();showToast(`Room ${r} is now available`);
+        }
+      },30*60*1000);
+    }
+  },30*60*1000);
+}
+
+function setMaintenance(r){roomData[r].status='maintenance';saveData();renderAll();}
+function setAvailable(r){roomData[r].status='available';saveData();renderAll();}
+
+function checkExisting(){
+  const mob=document.getElementById('ci-mobile').value.trim(),box=document.getElementById('existingCustomerBox'),info=document.getElementById('existingCustomerInfo');
+  if(mob.length===10&&customers[mob]){
+    const c=customers[mob],last=c.bookings[c.bookings.length-1];
+    box.style.display='block';info.innerHTML=`<b>${c.name}</b> — ${c.bookings.length} booking(s) | Last: Room ${last?.room} @ ₹${last?.price}`;
+    document.getElementById('ci-name').value=c.name;document.getElementById('ci-id').value=c.id||'';
+  }else{box.style.display='none';}
+}
+
+function renderHistoryTable(){
+  const f=document.getElementById('histFilter')?.value||'all';
+  const rows=bookings.filter(b=>f==='all'||(f==='active'&&(b.status==='active'||b.status==='checkout-pending'))||(f==='checked-out'&&b.status==='checked-out'));
+  document.getElementById('histTbody').innerHTML=rows.map(b=>{
+    const i=bookings.indexOf(b);
+    return`<tr><td><b>${b.room}</b></td><td>${b.customer}</td><td>${b.mobile}</td><td>${fmtDT(b.checkin)}</td><td>${b.checkout?fmtDT(b.checkout):'—'}</td><td>₹${b.price.toLocaleString('en-IN')}</td><td><span class="badge ${b.status==='checked-out'?'badge-green':'badge-red'}">${b.status==='active'?'Active':b.status==='checkout-pending'?'Pending':'Checked Out'}</span></td><td><button class="btn btn-invoice" onclick="openInvoiceForBooking(${i})"><i class="ti ti-receipt"></i> Bill</button></td></tr>`;
+  }).join('');
+}
+
+function renderCustomerTable(){
+  const q=(document.getElementById('custSearch')?.value||'').toLowerCase();
+  const rows=Object.values(customers).filter(c=>!q||c.mobile.includes(q)||c.name.toLowerCase().includes(q));
+  document.getElementById('custTbody').innerHTML=rows.map(c=>{
+    const spent=c.bookings.reduce((s,b)=>s+b.price,0),last=c.bookings[c.bookings.length-1];
+    return`<tr><td>${c.name}</td><td>${c.mobile}</td><td style="color:var(--rm-muted)">${c.id||'—'}</td><td>Room ${last?.room||'—'}</td><td>${c.bookings.length}</td><td>₹${spent.toLocaleString('en-IN')}</td><td><button class="btn btn-checkin" onclick="quickRebook('${c.mobile}')"><i class="ti ti-login"></i> Re-book</button></td><td><button class="btn btn-invoice" onclick="openInvoiceForCustomer('${c.mobile}')"><i class="ti ti-receipt"></i> Bill</button></td></tr>`;
+  }).join('');
+}
+
+function quickRebook(mob){
+  const c=customers[mob];if(!c)return;
+  showSection('checkin',document.querySelectorAll('.nav-item')[2]);
+  setTimeout(()=>{document.getElementById('ci-name').value=c.name;document.getElementById('ci-mobile').value=c.mobile;document.getElementById('ci-id').value=c.id||'';checkExisting();},50);
+}
+
+function renderRevStats(){
+  const all=bookings.reduce((s,b)=>s+b.price,0),done=bookings.filter(b=>b.status==='checked-out').reduce((s,b)=>s+b.price,0),pend=bookings.filter(b=>b.status==='active').reduce((s,b)=>s+b.price,0);
+  document.getElementById('revStats').innerHTML=`<div class="stat-card"><div class="stat-label">Total Revenue</div><div class="stat-val accent">₹${all.toLocaleString('en-IN')}</div></div><div class="stat-card"><div class="stat-label">Collected</div><div class="stat-val green">₹${done.toLocaleString('en-IN')}</div></div><div class="stat-card"><div class="stat-label">Pending</div><div class="stat-val yellow">₹${pend.toLocaleString('en-IN')}</div></div>`;
+  document.getElementById('revTbody').innerHTML=bookings.map(b=>`<tr><td><b>${b.room}</b></td><td>${b.customer}</td><td>₹${b.price.toLocaleString('en-IN')}</td><td>${fmtDT(b.checkin)}</td><td>${b.checkout?fmtDT(b.checkout):'—'}</td><td><span class="badge ${b.status==='checked-out'?'badge-green':'badge-red'}">${b.status==='checked-out'?'Collected':'Pending'}</span></td></tr>`).join('');
+}
+
+function globalSearchFn(){
+  const q=document.getElementById('globalSearch').value.trim();if(!q)return;
+  document.getElementById('custSearch').value=q;showSection('customers',document.querySelectorAll('.nav-item')[3]);renderCustomerTable();
+}
+
+function showSection(name,el){
+  document.querySelectorAll('.section-view').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(el)el.classList.add('active');
+  const titles={dashboard:'Dashboard Overview',rooms:'Room Layout',checkin:'Quick Check-in',customers:'Customer Database',history:'Booking History',revenue:'Revenue & Payments'};
+  document.getElementById('topbarTitle').textContent=titles[name]||name;
+  if(name==='checkin'){const now=new Date();now.setMinutes(now.getMinutes()-now.getTimezoneOffset());document.getElementById('ci-datetime').value=now.toISOString().slice(0,16);populateRoomSelect();}
+  renderCharts();
+}
+
+let roomStatusChart=null,dashRevenueChart=null,roomRevenueChart=null;
+
+function destroyCharts(){
+  [roomStatusChart,dashRevenueChart,roomRevenueChart].forEach(c=>{if(c)c.destroy();});
+  roomStatusChart=null;dashRevenueChart=null;roomRevenueChart=null;
+}
+
+function renderCharts(){
+  if(typeof Chart==='undefined')return;
+  destroyCharts();
+  const s=getStats();
+  const maint=ROOMS.filter(r=>roomData[r].status==='maintenance').length;
+  const elStatus=document.getElementById('roomStatusChart');
+  if(elStatus&&elStatus.offsetParent!==null){
+    roomStatusChart=new Chart(elStatus,{
+      type:'doughnut',
+      data:{labels:['Available','Occupied','Checkout Due','Maintenance'],
+        datasets:[{data:[s.avail,s.occ,s.co,maint],backgroundColor:['#3fa66c','#dc2626','#d9a83a','#6b7280'],borderColor:'#fff',borderWidth:2}]},
+      options:{responsive:true,cutout:'62%',plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12,font:{size:11},color:'#767b88'}}}}
+    });
+  }
+  const done=bookings.filter(b=>b.status==='checked-out').reduce((a,b)=>a+b.price,0);
+  const pend=bookings.filter(b=>b.status!=='checked-out').reduce((a,b)=>a+b.price,0);
+  const elDash=document.getElementById('dashRevenueChart');
+  if(elDash&&elDash.offsetParent!==null){
+    dashRevenueChart=new Chart(elDash,{
+      type:'bar',
+      data:{labels:['Collected','Pending'],datasets:[{data:[done,pend],backgroundColor:['#3fa66c','#6fb3e0'],borderRadius:6,maxBarThickness:60}]},
+      options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'₹'+c.parsed.y.toLocaleString('en-IN')}}},
+        scales:{y:{beginAtZero:true,ticks:{color:'#767b88',font:{size:10},callback:v=>'₹'+v.toLocaleString('en-IN')},grid:{color:'#e1e4ea'}},x:{ticks:{color:'#767b88',font:{size:11}},grid:{display:false}}}}
+    });
+  }
+  const elRoom=document.getElementById('roomRevenueChart');
+  if(elRoom&&elRoom.offsetParent!==null){
+    const palette=['#d4a017','#f0c75e','#3fa66c','#6fb3e0'];
+    const labels=ROOMS.map(r=>r);
+    const data=ROOMS.map(r=>bookings.filter(b=>b.room===r).reduce((a,b)=>a+b.price,0));
+    const colors=ROOMS.map((r,i)=>palette[i%palette.length]);
+    roomRevenueChart=new Chart(elRoom,{
+      type:'bar',
+      data:{labels,datasets:[{data,backgroundColor:colors,borderRadius:5,maxBarThickness:34}]},
+      options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'₹'+c.parsed.y.toLocaleString('en-IN')}}},
+        scales:{y:{beginAtZero:true,ticks:{color:'#767b88',font:{size:10},callback:v=>'₹'+v.toLocaleString('en-IN')},grid:{color:'#e1e4ea'}},x:{ticks:{color:'#767b88',font:{size:10}},grid:{display:false}}}}
+    });
+  }
+}
+
+function showToast(msg,color='green'){
+  const t=document.getElementById('toast');t.textContent=msg;t.style.borderLeftColor=color==='red'?'var(--rm-red)':'var(--rm-green)';t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+let invoiceCounter=1042;
+let billContext=null;
+
+function calcNights(ci,co){
+  if(!ci)return 1;
+  const start=new Date(ci),end=co?new Date(co):new Date();
+  const diff=Math.round((end-start)/(1000*60*60*24));
+  return diff<1?1:diff;
+}
+
+function openBillForm(b){
+  billContext=b;
+  const nights=calcNights(b.checkin,b.checkout);
+  const defaultTariff=nights>0?Math.round((b.price||0)/nights):(b.price||0);
+  const nowLocal=(()=>{const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16);})();
+  const arrival=b.checkin?b.checkin.slice(0,16):nowLocal;
+  const dept=b.checkout?b.checkout.slice(0,16):nowLocal;
+  document.getElementById('billFormModal').innerHTML=`
+    <div class="modal-title">Generate Bill<button class="modal-close" onclick="closeOverlay('billFormOverlay')"><i class="ti ti-x"></i></button></div>
+    <div style="font-size:11px;color:var(--rm-muted);margin-bottom:12px">Fill in the details required to generate the tax invoice.</div>
+
+    <div class="form-label" style="text-transform:uppercase;letter-spacing:.5px;color:var(--rm-accent);margin-bottom:8px">Guest Details</div>
+    <div class="form-group"><label class="form-label">Guest Name *</label><input class="form-input" id="bf-name" value="${b.customer||''}"></div>
+    <div class="form-group"><label class="form-label">Address</label><textarea class="form-input" id="bf-address" rows="2" placeholder="Guest address"></textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Nationality</label><input class="form-input" id="bf-nationality" value="Indian"></div>
+      <div class="form-group"><label class="form-label">PH No.</label><input class="form-input" id="bf-ph" value="${b.mobile||''}"></div>
+    </div>
+
+    <div class="form-label" style="text-transform:uppercase;letter-spacing:.5px;color:var(--rm-accent);margin:10px 0 8px">Stay Details</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Bill No.</label><input class="form-input" id="bf-billno" value="INV-${invoiceCounter+1}"></div>
+      <div class="form-group"><label class="form-label">Reg No.</label><input class="form-input" id="bf-regno" placeholder="Reg no."></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Room No.</label><input class="form-input" id="bf-room" value="${b.room}" readonly></div>
+      <div class="form-group"><label class="form-label">No. of Guest</label><input class="form-input" id="bf-nguest" type="number" min="1" value="1"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Extra Guest (count)</label><input class="form-input" id="bf-exguest-count" type="number" min="0" value="0"></div>
+      <div class="form-group"><label class="form-label">Actual Tariff (₹/night)</label><input class="form-input" id="bf-actual-tariff" type="number" value="${defaultTariff}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Arrival Date & Time</label><input class="form-input" id="bf-arrival" type="datetime-local" value="${arrival}"></div>
+      <div class="form-group"><label class="form-label">Dept. Date & Time</label><input class="form-input" id="bf-dept" type="datetime-local" value="${dept}"></div>
+    </div>
+
+    <div class="form-label" style="text-transform:uppercase;letter-spacing:.5px;color:var(--rm-accent);margin:10px 0 8px">Charges (₹)</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Room Tariff / night</label><input class="form-input" id="bf-room-tariff" type="number" value="${defaultTariff}"></div>
+      <div class="form-group"><label class="form-label">Extra Guest Charge</label><input class="form-input" id="bf-exguest-charge" type="number" value="0"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Room Service</label><input class="form-input" id="bf-roomservice" type="number" value="0"></div>
+      <div class="form-group"><label class="form-label">Restaurant</label><input class="form-input" id="bf-restaurant" type="number" value="0"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Laundry</label><input class="form-input" id="bf-laundry" type="number" value="0"></div>
+      <div class="form-group"><label class="form-label">Miscellaneous</label><input class="form-input" id="bf-misc" type="number" value="0"></div>
+    </div>
+
+    <div class="form-label" style="text-transform:uppercase;letter-spacing:.5px;color:var(--rm-accent);margin:10px 0 8px">Tax & Adjustments</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">SGST %</label><input class="form-input" id="bf-sgst" type="number" value="6"></div>
+      <div class="form-group"><label class="form-label">CGST %</label><input class="form-input" id="bf-cgst" type="number" value="6"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Add / Ded (+/-)</label><input class="form-input" id="bf-addded" type="number" value="0"></div>
+      <div class="form-group"><label class="form-label">Amount C/F</label><input class="form-input" id="bf-cf" type="number" value="0"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Less: Deposit</label><input class="form-input" id="bf-deposit" type="number" value="0"></div>
+      <div class="form-group"><label class="form-label">Checkout By</label><input class="form-input" id="bf-checkoutby" placeholder="Staff name"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Hotel GSTIN</label><input class="form-input" id="bf-gstin" placeholder="Optional"></div>
+      <div class="form-group"><label class="form-label">HSN Code</label><input class="form-input" id="bf-hsn" placeholder="Optional"></div>
+    </div>
+
+    <button class="btn btn-primary" style="width:100%;margin-top:6px" onclick="generateBillFromForm()"><i class="ti ti-receipt"></i> Generate Invoice</button>
+  `;
+  document.getElementById('billFormOverlay').classList.add('show');
+}
+
+function addDaysISO(dtStr,n){
+  const d=dtStr?new Date(dtStr):new Date();
+  d.setDate(d.getDate()+n);
+  return d;
+}
+function fmtDateOnly(d){return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});}
+function rupee(n){return '₹'+Math.round(n).toLocaleString('en-IN');}
+
+function generateBillFromForm(){
+  const v=id=>document.getElementById(id).value;
+  const name=v('bf-name').trim();
+  if(!name){showToast('Guest name is required','red');return;}
+  const arrival=v('bf-arrival'),dept=v('bf-dept');
+  const nights=Math.max(1,calcNights(arrival,dept));
+
+  const data={
+    billNo:v('bf-billno')||`INV-${invoiceCounter+1}`,
+    regNo:v('bf-regno'),
+    name,address:v('bf-address'),nationality:v('bf-nationality'),ph:v('bf-ph'),
+    room:billContext.room,nGuest:v('bf-nguest')||1,exGuestCount:v('bf-exguest-count')||0,
+    actualTariff:parseFloat(v('bf-actual-tariff'))||0,
+    arrival,dept,nights,
+    gstin:v('bf-gstin'),hsn:v('bf-hsn'),
+    roomTariff:parseFloat(v('bf-room-tariff'))||0,
+    exGuestCharge:parseFloat(v('bf-exguest-charge'))||0,
+    roomService:parseFloat(v('bf-roomservice'))||0,
+    restaurant:parseFloat(v('bf-restaurant'))||0,
+    laundry:parseFloat(v('bf-laundry'))||0,
+    misc:parseFloat(v('bf-misc'))||0,
+    sgstPct:parseFloat(v('bf-sgst'))||0,
+    cgstPct:parseFloat(v('bf-cgst'))||0,
+    addDed:parseFloat(v('bf-addded'))||0,
+    cf:parseFloat(v('bf-cf'))||0,
+    deposit:parseFloat(v('bf-deposit'))||0,
+    checkoutBy:v('bf-checkoutby')
+  };
+  invoiceCounter++;
+  closeOverlay('billFormOverlay');
+  renderTaxInvoice(data);
+  document.getElementById('invoiceOverlay').classList.add('show');
+}
+
+function renderTaxInvoice(data){
+  let rows='';
+  let totRoom=0,totEx=0,totRS=0,totRest=0,totLau=0,totMisc=0,totSub=0;
+  for(let i=0;i<data.nights;i++){
+    const dt=addDaysISO(data.arrival,i);
+    const ex=i===0?data.exGuestCharge:0;
+    const rs=i===0?data.roomService:0;
+    const rest=i===0?data.restaurant:0;
+    const lau=i===0?data.laundry:0;
+    const ms=i===0?data.misc:0;
+    const sub=data.roomTariff+ex+rs+rest+lau+ms;
+    totRoom+=data.roomTariff;totEx+=ex;totRS+=rs;totRest+=rest;totLau+=lau;totMisc+=ms;totSub+=sub;
+    rows+=`<tr><td>${fmtDateOnly(dt)}</td><td>${rupee(data.roomTariff)}</td><td>${ex?rupee(ex):'—'}</td><td>${rs?rupee(rs):'—'}</td><td>${rest?rupee(rest):'—'}</td><td>${lau?rupee(lau):'—'}</td><td>${ms?rupee(ms):'—'}</td><td>${rupee(sub)}</td></tr>`;
+  }
+  const taxable=totSub;
+  const sgstAmt=taxable*data.sgstPct/100;
+  const cgstAmt=taxable*data.cgstPct/100;
+  const finalAmt=totSub+sgstAmt+cgstAmt+data.addDed+data.cf;
+  const netAmt=finalAmt-data.deposit;
+  const issued=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+
+  document.getElementById('invoiceModal').innerHTML=`
+    <div class="modal-title no-print">Tax Invoice<button class="modal-close" onclick="closeOverlay('invoiceOverlay')"><i class="ti ti-x"></i></button></div>
+    <div id="invoiceContent">
+      <div class="inv-wrap">
+        <div class="inv-ornament">❧ ✦ ❧</div>
+        <div class="inv-hr"></div>
+        <div class="inv-title">HOTEL PEACOCK ANAND</div>
+        <div class="inv-address"><i class="ti ti-map-pin"></i> 2nd Floor, HM Landmark, Anand - Borsad Hwy, nr. Thakkarwadi Town Hall, Vivekanand Wadi, Anand, Gujarat 388120</div>
+        <div class="inv-contact"><i class="ti ti-phone"></i> Mobile No: 8866444835 &nbsp;|&nbsp; <i class="ti ti-mail"></i> hotelpeacock35@gmail.com</div>
+        <div style="text-align:right;font-size:9.5px;color:var(--rm-muted);margin-top:6px">Date Issued: ${issued}</div>
+
+        <div class="inv-topline">
+          <div class="inv-gstbox">
+            <div><b>HOTEL GSTIN</b> : ${data.gstin||'—'}</div>
+            <div><b>HSN CODE</b> : ${data.hsn||'—'}</div>
+          </div>
+          <div class="inv-taxbadge">TAX INVOICE</div>
+        </div>
+
+        <div class="inv-boxes">
+          <div class="inv-box">
+            <div class="inv-field"><b>Guest Name</b><span>${data.name}</span></div>
+            <div class="inv-field"><b>Address</b><span>${data.address||'—'}</span></div>
+            <div class="inv-field"><b>Nationality</b><span>${data.nationality||'—'}</span></div>
+            <div class="inv-field"><b>PH No.</b><span>${data.ph||'—'}</span></div>
+            <div class="inv-field"><b>Actual Tariff</b><span>${rupee(data.actualTariff)}</span></div>
+          </div>
+          <div class="inv-box">
+            <div class="inv-field"><b>Bill No.</b><span>${data.billNo}</span></div>
+            <div class="inv-field"><b>Reg No.</b><span>${data.regNo||'—'}</span></div>
+            <div class="inv-field"><b>Room No.</b><span>${data.room}</span></div>
+            <div class="inv-field"><b>No. of Guest</b><span>${data.nGuest}</span></div>
+            <div class="inv-field"><b>Extra Guest</b><span>${data.exGuestCount}</span></div>
+            <div class="inv-field"><b>Arrival</b><span>${fmtDT(data.arrival)}</span></div>
+            <div class="inv-field"><b>Departure</b><span>${fmtDT(data.dept)}</span></div>
+            <div class="inv-field"><b>Days</b><span>${data.nights}</span></div>
+          </div>
+        </div>
+
+        <div class="inv-table-wrap">
+          <table class="inv-table">
+            <thead><tr><th><i class="ti ti-calendar-event"></i> Date</th><th>Room Tariff</th><th>Extra Guest</th><th><i class="ti ti-bed"></i> Room Service</th><th><i class="ti ti-tools-kitchen-2"></i> Rest.</th><th><i class="ti ti-wash"></i> Laundry</th><th><i class="ti ti-dots"></i> Misc.</th><th>Sub Total</th></tr></thead>
+            <tbody>
+              ${rows}
+              <tr class="inv-total-row"><td>TOTAL</td><td>${rupee(totRoom)}</td><td>${rupee(totEx)}</td><td>${rupee(totRS)}</td><td>${rupee(totRest)}</td><td>${rupee(totLau)}</td><td>${rupee(totMisc)}</td><td>${rupee(totSub)}</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="inv-bottom">
+          <div class="inv-pill-wrap">
+            <div class="inv-pill">AMOUNT SUMMARY</div>
+            <div class="inv-amt-row"><span>Add / Ded</span><span>${rupee(data.addDed)}</span></div>
+            <div class="inv-amt-row"><span>Amount C/F</span><span>${rupee(data.cf)}</span></div>
+            <div class="inv-amt-row"><span>Final Amount</span><span>${rupee(finalAmt)}</span></div>
+            <div class="inv-amt-row"><span>Less : Deposit</span><span>${rupee(data.deposit)}</span></div>
+            <div class="inv-net-bar"><span>Net Amount</span><span>${rupee(netAmt)}</span></div>
+          </div>
+          <div>
+            <div class="inv-pill-wrap">
+              <div class="inv-pill">SERVICE DETAILS</div>
+              <div class="inv-service-grid">
+                <div class="inv-service-col"><i class="ti ti-bed"></i><div class="lbl">ROOM SERVICE</div><div class="val">${rupee(totRS)}</div></div>
+                <div class="inv-service-col"><i class="ti ti-tools-kitchen-2"></i><div class="lbl">RESTAURANT</div><div class="val">${rupee(totRest)}</div></div>
+                <div class="inv-service-col"><i class="ti ti-wash"></i><div class="lbl">LAUNDRY</div><div class="val">${rupee(totLau)}</div></div>
+                <div class="inv-service-col"><i class="ti ti-dots"></i><div class="lbl">MISC.</div><div class="val">${rupee(totMisc)}</div></div>
+              </div>
+            </div>
+            <div class="inv-tax-box">
+              <div class="inv-amt-row"><span>Total SGST (${data.sgstPct}%)</span><span>${rupee(sgstAmt)}</span></div>
+              <div class="inv-amt-row"><span>Total CGST (${data.cgstPct}%)</span><span>${rupee(cgstAmt)}</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="inv-footer">
+          <div>CheckOut By : ${data.checkoutBy||'________________'}</div>
+          <div>Guest Sign : ________________</div>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-primary no-print" style="width:100%;margin-top:14px" onclick="window.print()"><i class="ti ti-printer"></i> Print Invoice</button>
+  `;
+}
+
+function openInvoiceForRoom(r){
+  const d=roomData[r];
+  if(!d||!d.customer){showToast('No active booking for this room','red');return;}
+  openBillForm({room:r,customer:d.customer,mobile:d.mobile,price:d.price,checkin:d.checkin,checkout:d.status==='checkout'?new Date().toISOString():null,id:d.id});
+}
+
+function openInvoiceForBooking(i){
+  const b=bookings[i];if(!b)return;
+  openBillForm(b);
+}
+
+function openInvoiceForCustomer(mob){
+  const list=bookings.filter(b=>b.mobile===mob);
+  const last=list[list.length-1];
+  if(!last){showToast('No bookings found for this customer','red');return;}
+  openBillForm(last);
+}
+
+function updateClock(){document.getElementById('clockEl').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short'})+' '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});}
+
+initRooms();renderAll();updateClock();setInterval(updateClock,30000);
+</script>
+</body>
+</html>
