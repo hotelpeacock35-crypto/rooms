@@ -6,6 +6,8 @@
 <title>Hotel Peacock Anand</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px}
@@ -364,16 +366,36 @@ let roomData={};
 let bookings=[];
 let customers={};
 
-// ── LocalStorage Save / Load ──────────────────────────────
+// ── Firebase Setup (Hotel Peacock Anand) ──────────────────
+const firebaseConfig={
+  apiKey:"AIzaSyDukiCt-DGIYzx6UN-gc-S4Nh4edOd-sX0",
+  authDomain:"hotel-peacock.firebaseapp.com",
+  databaseURL:"https://hotel-peacock-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"hotel-peacock",
+  storageBucket:"hotel-peacock.firebasestorage.app",
+  messagingSenderId:"868499380261",
+  appId:"1:868499380261:web:09e30895cc95db5a8e47cc"
+};
+firebase.initializeApp(firebaseConfig);
+const db=firebase.database();
+const hotelRef=db.ref('hotelData');
+let firstSnapshotReceived=false;
+
+// ── Save: writes to Firebase (cloud, synced to all devices) + LocalStorage (instant local cache) ──
 function saveData(){
   try{
     localStorage.setItem('hms_roomData',JSON.stringify(roomData));
     localStorage.setItem('hms_bookings',JSON.stringify(bookings));
     localStorage.setItem('hms_customers',JSON.stringify(customers));
-  }catch(e){console.warn('Save failed',e);}
+  }catch(e){console.warn('Local save failed',e);}
+  hotelRef.set({roomData,bookings,customers}).catch(e=>{
+    console.warn('Firebase save failed',e);
+    showToast('Cloud sync failed — check internet / Firebase rules','red');
+  });
 }
 
-function loadData(){
+// ── Load cached copy instantly so UI isn't blank while Firebase connects ──
+function loadLocalCache(){
   try{
     const rd=localStorage.getItem('hms_roomData');
     const bk=localStorage.getItem('hms_bookings');
@@ -381,48 +403,78 @@ function loadData(){
     if(rd)roomData=JSON.parse(rd);
     if(bk)bookings=JSON.parse(bk);
     if(cu)customers=JSON.parse(cu);
-    // Restart checkout timers for rooms that had checkout in progress
-    ROOMS.forEach(r=>{
-      const d=roomData[r];
-      if(!d)return;
-      if(d.status==='checkout'&&d._checkoutTime){
-        const elapsed=Date.now()-d._checkoutTime;
-        const rem1=30*60*1000-elapsed;
-        if(rem1>0){
-          setTimeout(()=>{
-            if(roomData[r]&&roomData[r].status==='checkout'){
-              roomData[r].status='checkout-clearing';roomData[r]._clearTime=Date.now();
-              saveData();renderAll();showToast(`Room ${r} — Cleaning in progress`);
-              setTimeout(()=>{if(roomData[r]&&roomData[r].status==='checkout-clearing'){roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};saveData();renderAll();showToast(`Room ${r} is now available`);}},30*60*1000);
-            }
-          },rem1);
-        }else{
-          roomData[r].status='checkout-clearing';
-          roomData[r]._clearTime=roomData[r]._clearTime||Date.now();
-          const elapsed2=roomData[r]._clearTime?Date.now()-roomData[r]._clearTime:0;
-          const rem2=30*60*1000-elapsed2;
-          if(rem2>0){
-            setTimeout(()=>{if(roomData[r]&&roomData[r].status==='checkout-clearing'){roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};saveData();renderAll();showToast(`Room ${r} is now available`);}},rem2);
-          }else{
-            roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};
+  }catch(e){console.warn('Local cache load failed',e);}
+}
+
+// Restart checkout timers for rooms that had checkout in progress
+function restartCheckoutTimers(){
+  ROOMS.forEach(r=>{
+    const d=roomData[r];
+    if(!d)return;
+    if(d.status==='checkout'&&d._checkoutTime){
+      const elapsed=Date.now()-d._checkoutTime;
+      const rem1=30*60*1000-elapsed;
+      if(rem1>0){
+        setTimeout(()=>{
+          if(roomData[r]&&roomData[r].status==='checkout'){
+            roomData[r].status='checkout-clearing';roomData[r]._clearTime=Date.now();
+            saveData();renderAll();showToast(`Room ${r} — Cleaning in progress`);
+            setTimeout(()=>{if(roomData[r]&&roomData[r].status==='checkout-clearing'){roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};saveData();renderAll();showToast(`Room ${r} is now available`);}},30*60*1000);
           }
-        }
-      }else if(d.status==='checkout-clearing'&&d._clearTime){
-        const elapsed=Date.now()-d._clearTime;
-        const rem=30*60*1000-elapsed;
-        if(rem>0){
-          setTimeout(()=>{if(roomData[r]&&roomData[r].status==='checkout-clearing'){roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};saveData();renderAll();showToast(`Room ${r} is now available`);}},rem);
+        },rem1);
+      }else{
+        roomData[r].status='checkout-clearing';
+        roomData[r]._clearTime=roomData[r]._clearTime||Date.now();
+        const elapsed2=roomData[r]._clearTime?Date.now()-roomData[r]._clearTime:0;
+        const rem2=30*60*1000-elapsed2;
+        if(rem2>0){
+          setTimeout(()=>{if(roomData[r]&&roomData[r].status==='checkout-clearing'){roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};saveData();renderAll();showToast(`Room ${r} is now available`);}},rem2);
         }else{
           roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};
         }
       }
-    });
-  }catch(e){console.warn('Load failed',e);}
+    }else if(d.status==='checkout-clearing'&&d._clearTime){
+      const elapsed=Date.now()-d._clearTime;
+      const rem=30*60*1000-elapsed;
+      if(rem>0){
+        setTimeout(()=>{if(roomData[r]&&roomData[r].status==='checkout-clearing'){roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};saveData();renderAll();showToast(`Room ${r} is now available`);}},rem);
+      }else{
+        roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};
+      }
+    }
+  });
+}
+
+// ── Listen for real-time updates from Firebase (syncs across every browser/device live) ──
+function listenFirebase(){
+  hotelRef.on('value',snap=>{
+    const val=snap.val();
+    if(val){
+      roomData=val.roomData||{};
+      bookings=val.bookings||[];
+      customers=val.customers||{};
+    }
+    ROOMS.forEach(r=>{if(!roomData[r])roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};});
+    if(!firstSnapshotReceived){
+      restartCheckoutTimers();
+      firstSnapshotReceived=true;
+    }
+    buildCustomers();
+    renderAll();
+    try{
+      localStorage.setItem('hms_roomData',JSON.stringify(roomData));
+      localStorage.setItem('hms_bookings',JSON.stringify(bookings));
+      localStorage.setItem('hms_customers',JSON.stringify(customers));
+    }catch(e){}
+  },err=>{
+    console.warn('Firebase connection error',err);
+    showToast('Firebase connect failed — check database rules','red');
+  });
 }
 // ─────────────────────────────────────────────────────────
 
 function initRooms(){
-  loadData();
+  loadLocalCache();
   ROOMS.forEach(r=>{if(!roomData[r])roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};});
   buildCustomers();
 }
@@ -910,7 +962,7 @@ function openInvoiceForCustomer(mob){
 
 function updateClock(){document.getElementById('clockEl').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short'})+' '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});}
 
-initRooms();renderAll();updateClock();setInterval(updateClock,30000);
+initRooms();renderAll();updateClock();setInterval(updateClock,30000);listenFirebase();
 </script>
 </body>
 </html>
