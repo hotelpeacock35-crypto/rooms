@@ -419,6 +419,15 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
           <div class="form-group"><label class="form-label">Confirm New Password</label><input class="form-input" id="chg-confirm-del" type="password" placeholder="Confirm new password"></div>
           <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,#dc2626,#d9a83a)" onclick="changePassword('delete')"><i class="ti ti-check"></i> Update Delete Password</button>
         </div>
+
+        <div style="background:var(--rm-card);border:1.5px solid rgba(220,38,38,.35);border-radius:12px;padding:20px">
+          <div style="font-size:13px;font-weight:500;color:var(--rm-red);margin-bottom:6px"><i class="ti ti-trash"></i> Saara Data Clear Karo</div>
+          <div style="font-size:11px;color:var(--rm-muted);margin-bottom:14px">Yeh action saari bookings, room history, customers aur expenses permanently delete karega — Firebase aur local dono se. Wapas nahi ho sakta!</div>
+          <div class="form-group"><label class="form-label">Admin Password (confirm karne ke liye)</label><input class="form-input" id="clearAllPass" type="password" placeholder="Admin password daalo"></div>
+          <div id="clearAllErr" style="display:none;font-size:11px;color:var(--rm-red);margin-bottom:8px"><i class="ti ti-alert-circle"></i> Galat password!</div>
+          <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,#dc2626,#b91c1c)" onclick="clearAllData()"><i class="ti ti-trash"></i> Haan, Saara Data Delete Karo</button>
+        </div>
+
       </div>
     </div>
 
@@ -594,42 +603,17 @@ function loadLocalCache(){
   }catch(e){console.warn('Local cache load failed',e);}
 }
 
-// Restart checkout timers for rooms that had checkout in progress
+// Restart: ab sirf checkout-clearing rooms ko available karo (manual release ke liye kuch nahi chahiye)
 function restartCheckoutTimers(){
   ROOMS.forEach(r=>{
     const d=roomData[r];
     if(!d)return;
-    if(d.status==='checkout'&&d._checkoutTime){
-      const elapsed=Date.now()-d._checkoutTime;
-      const rem1=15*60*1000-elapsed;
-      if(rem1>0){
-        setTimeout(()=>{
-          if(roomData[r]&&roomData[r].status==='checkout'){
-            roomData[r].status='checkout-clearing';roomData[r]._clearTime=Date.now();
-            saveData();renderAll();showToast(`Room ${r} — Cleaning in progress`);
-            setTimeout(()=>{if(roomData[r]&&roomData[r].status==='checkout-clearing'){roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};saveData();renderAll();showToast(`Room ${r} is now available`);}},15*60*1000);
-          }
-        },rem1);
-      }else{
-        roomData[r].status='checkout-clearing';
-        roomData[r]._clearTime=roomData[r]._clearTime||Date.now();
-        const elapsed2=roomData[r]._clearTime?Date.now()-roomData[r]._clearTime:0;
-        const rem2=15*60*1000-elapsed2;
-        if(rem2>0){
-          setTimeout(()=>{if(roomData[r]&&roomData[r].status==='checkout-clearing'){roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};saveData();renderAll();showToast(`Room ${r} is now available`);}},rem2);
-        }else{
-          roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};
-        }
-      }
-    }else if(d.status==='checkout-clearing'&&d._clearTime){
-      const elapsed=Date.now()-d._clearTime;
-      const rem=15*60*1000-elapsed;
-      if(rem>0){
-        setTimeout(()=>{if(roomData[r]&&roomData[r].status==='checkout-clearing'){roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};saveData();renderAll();showToast(`Room ${r} is now available`);}},rem);
-      }else{
-        roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};
-      }
+    // Agar koi room 'checkout' state mein tha (yellow phase) — seedha clearing mein le aao
+    if(d.status==='checkout'){
+      roomData[r].status='checkout-clearing';
+      roomData[r]._clearTime=Date.now();
     }
+    // checkout-clearing: kuch timer nahi — staff manually Release karega
   });
 }
 
@@ -706,7 +690,7 @@ function roomCardHTML(r,d){
   const isAdmin=currentRole==='admin';
   if(d.status==='available')actions=isAdmin?`<button class="btn btn-checkin" onclick="goCheckin(${r})"><i class="ti ti-login"></i> Check-in</button><button class="btn btn-maint" onclick="setMaintenance(${r})"><i class="ti ti-tool"></i></button>`:`<span style="font-size:11px;color:var(--rm-muted)">View Only</span>`;
   else if(d.status==='occupied'||d.status==='checkout')actions=isAdmin?`<button class="btn btn-checkout" onclick="openCheckoutModal(${r})"><i class="ti ti-logout"></i> Checkout</button><button class="btn" style="background:rgba(63,166,108,.12);color:var(--rm-green)" onclick="openAddPaymentModal(${r})"><i class="ti ti-wallet"></i> Pay</button><button class="btn btn-invoice" onclick="openInvoiceForRoom(${r})"><i class="ti ti-receipt"></i> Bill</button>`:`<button class="btn btn-invoice" onclick="openInvoiceForRoom(${r})"><i class="ti ti-receipt"></i> Bill</button>`;
-  else if(d.status==='checkout-clearing')actions=isAdmin?`<button class="btn btn-checkin" onclick="setAvailable(${r})"><i class="ti ti-check"></i> Mark Ready</button>`:`<span style="font-size:11px;color:var(--rm-muted)">Cleaning…</span>`;
+  else if(d.status==='checkout-clearing')actions=isAdmin?`<button class="btn btn-checkin" onclick="setAvailable(${r})" style="background:rgba(63,166,108,.15);color:var(--rm-green);font-weight:600"><i class="ti ti-door-exit"></i> Release Room</button>`:`<span style="font-size:11px;color:var(--rm-muted)">Cleaning…</span>`;
   else if(d.status==='maintenance')actions=isAdmin?`<button class="btn btn-checkin" onclick="setAvailable(${r})"><i class="ti ti-check"></i> Mark Ready</button>`:`<span style="font-size:11px;color:var(--rm-muted)">Maintenance</span>`;
   const info=d.customer?`<div class="room-info"><div class="name">${d.customer}</div><div><i class="ti ti-phone" style="font-size:11px"></i> ${d.mobile}</div><div><i class="ti ti-currency-rupee" style="font-size:11px"></i> ₹${d.price?.toLocaleString('en-IN')}</div><div><i class="ti ti-calendar" style="font-size:11px"></i> ${d.checkin?fmtDT(d.checkin):''}</div></div>`:`<div class="room-info" style="color:var(--rm-muted)">Room is ${statusLabel(d.status).toLowerCase()}</div>`;
   return`<div class="room-card ${d.status}"><div class="room-header"><span class="room-num"><i class="ti ti-door"></i> ${r}</span><span class="status-dot ${d.status}"></span></div><div class="room-status ${d.status}">${statusLabel(d.status)}</div>${info}<div class="room-actions">${actions}</div></div>`;
@@ -847,23 +831,9 @@ function doCheckout(r){
   const b=bookings.find(x=>x.room===r&&(x.status==='active'||x.status==='checkout-pending'));
   if(b){b.checkout=coTime;b.status='checked-out';b.paymentMode=primaryMode;b.payments=allPays;b.totalPaid=totalPaid;}
   if(customers[d.mobile]){const cb=customers[d.mobile].bookings.find(x=>x.room===r);if(cb)cb.status='checked-out';}
-  // Phase 1: light yellow (checkout) for 30 minutes
-  roomData[r]={status:'checkout',customer:null,mobile:null,price:null,checkin:null,id:null,_checkoutTime:Date.now()};
-  saveData();closeOverlay('checkoutOverlay');renderAll();showToast(`Room ${r} checkout complete`);
-  // After 30 min → phase 2: light white (checkout-clearing)
-  setTimeout(()=>{
-    if(roomData[r]&&roomData[r].status==='checkout'){
-      roomData[r].status='checkout-clearing';roomData[r]._clearTime=Date.now();
-      saveData();renderAll();showToast(`Room ${r} — Cleaning in progress`);
-      // After another 30 min → available (white/normal)
-      setTimeout(()=>{
-        if(roomData[r]&&roomData[r].status==='checkout-clearing'){
-          roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};
-          saveData();renderAll();showToast(`Room ${r} is now available`);
-        }
-      },15*60*1000);
-    }
-  },15*60*1000);
+  // Seedha checkout-clearing (yellow phase hata diya) — staff manually Release karega
+  roomData[r]={status:'checkout-clearing',customer:null,mobile:null,price:null,checkin:null,id:null,_clearTime:Date.now()};
+  saveData();closeOverlay('checkoutOverlay');renderAll();showToast(`Room ${r} checkout complete — Release karo jab ready ho`);
 }
 
 function openAddPaymentModal(r){
@@ -1615,6 +1585,36 @@ function confirmDelete(){
 }
 
 function confirmDeleteBooking(){confirmDelete();}
+
+// ── Clear ALL Data (bookings, rooms, customers, expenses) ─────
+function clearAllData(){
+  if(currentRole!=='admin'){showToast('Sirf Admin yeh kar sakta hai','red');return;}
+  const p=document.getElementById('clearAllPass')?.value||'';
+  const adminPwd=getPwd('admin','peacock835');
+  if(p!==adminPwd){
+    document.getElementById('clearAllErr').style.display='block';
+    document.getElementById('clearAllPass').value='';
+    return;
+  }
+  document.getElementById('clearAllErr').style.display='none';
+  document.getElementById('clearAllPass').value='';
+  // Reset everything
+  bookings=[];
+  customers={};
+  expenses={};
+  ROOMS.forEach(r=>{roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};});
+  // Clear Firebase
+  hotelRef.set({roomData,bookings:[],customers:{},expenses:[]}).catch(e=>console.warn('Firebase clear failed',e));
+  // Clear localStorage
+  try{
+    localStorage.removeItem('hms_roomData');
+    localStorage.removeItem('hms_bookings');
+    localStorage.removeItem('hms_customers');
+    localStorage.removeItem('hms_expenses');
+  }catch(e){}
+  renderAll();
+  showToast('✅ Saara data successfully delete ho gaya!');
+}
 
 // ── Password Change ───────────────────────────────────────────
 function changePassword(type){
