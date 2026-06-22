@@ -88,7 +88,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .room-status.maintenance{background:rgba(107,114,128,.12);color:var(--rm-gray)}
 .room-info{font-size:11px;color:var(--rm-muted);line-height:1.6}
 .room-info .name{color:var(--rm-text);font-weight:500;font-size:12px}
-.room-actions{display:flex;gap:6px;margin-top:10px}
+.room-actions{display:flex;gap:4px;margin-top:10px;flex-wrap:wrap}
 .btn{border:none;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:inherit;font-weight:500}
 .btn-checkin{background:rgba(212,160,23,.1);color:var(--rm-accent)}
 .btn-checkin:hover{background:rgba(212,160,23,.2)}
@@ -331,6 +331,34 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
             <label class="form-label">Check-in Date & Time</label>
             <input class="form-input" id="ci-datetime" type="datetime-local">
           </div>
+          <div style="border-top:1px dashed var(--rm-border);margin:14px 0 12px;font-size:12px;color:var(--rm-accent);font-weight:500"><i class="ti ti-wallet"></i> Advance / Check-in Payment (optional)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="form-group">
+              <label class="form-label">Payment Mode</label>
+              <select class="form-input" id="ci-pay-mode">
+                <option value="">-- Koi nahi --</option>
+                <option value="Cash">Cash</option>
+                <option value="UPI">UPI</option>
+                <option value="PhonePe">PhonePe</option>
+                <option value="Google Pay">Google Pay</option>
+                <option value="Card">Card</option>
+                <option value="Net Banking">Net Banking</option>
+                <optgroup label="── Online Booking ──">
+                  <option value="MakeMyTrip">MakeMyTrip (MMT)</option>
+                  <option value="Agoda">Agoda</option>
+                  <option value="Booking.com">Booking.com</option>
+                  <option value="Cleartrip">Cleartrip</option>
+                  <option value="Bravistay">Bravistay</option>
+                  <option value="Hotel Zify">Hotel Zify</option>
+                  <option value="Others">Others</option>
+                </optgroup>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Amount (₹)</label>
+              <input class="form-input" id="ci-pay-amt" type="number" placeholder="0">
+            </div>
+          </div>
           <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="doCheckin()">
             <i class="ti ti-login"></i> Confirm Booking
           </button>
@@ -406,8 +434,9 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
           <button class="btn btn-primary" style="font-size:11px;padding:6px 14px" onclick="downloadMonthlyReportCSV()"><i class="ti ti-download"></i> Monthly Report</button>
         </div>
       </div>
-      <div class="stats-row" style="grid-template-columns:repeat(4,1fr)" id="revStats"></div>
-      <div class="stats-row" style="grid-template-columns:repeat(4,1fr);margin-top:0" id="revStats2"></div>
+      <div class="stats-row" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr))" id="revStats"></div>
+      <div style="font-size:11px;font-weight:500;color:var(--rm-muted);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.6px"><i class="ti ti-credit-card"></i> Payment Mode Breakdown</div>
+      <div class="stats-row" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr));margin-top:0" id="revStats2"></div>
       <div class="chart-card" style="max-width:760px;margin-top:16px">
         <div class="section-title">Revenue by Room</div>
         <canvas id="roomRevenueChart" height="120"></canvas>
@@ -505,10 +534,10 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
 <div class="overlay" id="deletePassOverlay">
   <div class="modal" style="width:360px;max-width:95vw">
     <div class="modal-title"><i class="ti ti-shield-lock" style="color:var(--rm-red)"></i> &nbsp;Delete Confirmation<button class="modal-close" onclick="closeOverlay('deletePassOverlay')"><i class="ti ti-x"></i></button></div>
-    <div style="font-size:12px;color:var(--rm-muted);margin-bottom:14px">Yeh booking permanently delete ho jaayegi. Aage badhne ke liye delete password enter karo.</div>
-    <div class="form-group"><label class="form-label">Delete Password</label><input class="form-input" id="deletePassInput" type="password" placeholder="Enter delete password" onkeydown="if(event.key==='Enter')confirmDeleteBooking()"></div>
+    <div id="deletePassDesc" style="font-size:12px;color:var(--rm-muted);margin-bottom:14px">Yeh record permanently delete ho jaayega. Aage badhne ke liye delete password enter karo.</div>
+    <div class="form-group"><label class="form-label">Delete Password</label><input class="form-input" id="deletePassInput" type="password" placeholder="Enter delete password" onkeydown="if(event.key==='Enter')confirmDelete()"></div>
     <div id="deletePassErr" style="display:none;font-size:11px;color:var(--rm-red);margin-bottom:8px"><i class="ti ti-alert-circle"></i> Galat password!</div>
-    <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,#dc2626,#b91c1c)" onclick="confirmDeleteBooking()"><i class="ti ti-trash"></i> Delete Booking</button>
+    <button class="btn btn-primary" id="deletePassBtn" style="width:100%;background:linear-gradient(135deg,#dc2626,#b91c1c)" onclick="confirmDelete()"><i class="ti ti-trash"></i> Delete</button>
   </div>
 </div>
 
@@ -676,7 +705,7 @@ function roomCardHTML(r,d){
   let actions='';
   const isAdmin=currentRole==='admin';
   if(d.status==='available')actions=isAdmin?`<button class="btn btn-checkin" onclick="goCheckin(${r})"><i class="ti ti-login"></i> Check-in</button><button class="btn btn-maint" onclick="setMaintenance(${r})"><i class="ti ti-tool"></i></button>`:`<span style="font-size:11px;color:var(--rm-muted)">View Only</span>`;
-  else if(d.status==='occupied'||d.status==='checkout')actions=isAdmin?`<button class="btn btn-checkout" onclick="openCheckoutModal(${r})"><i class="ti ti-logout"></i> Checkout</button><button class="btn btn-invoice" onclick="openInvoiceForRoom(${r})"><i class="ti ti-receipt"></i> Bill</button>`:`<button class="btn btn-invoice" onclick="openInvoiceForRoom(${r})"><i class="ti ti-receipt"></i> Bill</button>`;
+  else if(d.status==='occupied'||d.status==='checkout')actions=isAdmin?`<button class="btn btn-checkout" onclick="openCheckoutModal(${r})"><i class="ti ti-logout"></i> Checkout</button><button class="btn" style="background:rgba(63,166,108,.12);color:var(--rm-green)" onclick="openAddPaymentModal(${r})"><i class="ti ti-wallet"></i> Pay</button><button class="btn btn-invoice" onclick="openInvoiceForRoom(${r})"><i class="ti ti-receipt"></i> Bill</button>`:`<button class="btn btn-invoice" onclick="openInvoiceForRoom(${r})"><i class="ti ti-receipt"></i> Bill</button>`;
   else if(d.status==='checkout-clearing')actions=isAdmin?`<button class="btn btn-checkin" onclick="setAvailable(${r})"><i class="ti ti-check"></i> Mark Ready</button>`:`<span style="font-size:11px;color:var(--rm-muted)">Cleaning…</span>`;
   else if(d.status==='maintenance')actions=isAdmin?`<button class="btn btn-checkin" onclick="setAvailable(${r})"><i class="ti ti-check"></i> Mark Ready</button>`:`<span style="font-size:11px;color:var(--rm-muted)">Maintenance</span>`;
   const info=d.customer?`<div class="room-info"><div class="name">${d.customer}</div><div><i class="ti ti-phone" style="font-size:11px"></i> ${d.mobile}</div><div><i class="ti ti-currency-rupee" style="font-size:11px"></i> ₹${d.price?.toLocaleString('en-IN')}</div><div><i class="ti ti-calendar" style="font-size:11px"></i> ${d.checkin?fmtDT(d.checkin):''}</div></div>`:`<div class="room-info" style="color:var(--rm-muted)">Room is ${statusLabel(d.status).toLowerCase()}</div>`;
@@ -704,8 +733,20 @@ function fmtDT(s){if(!s)return'';const d=new Date(s);return d.toLocaleDateString
 
 function goCheckin(r){showSection('checkin',document.querySelectorAll('.nav-item')[2]);setTimeout(()=>{document.getElementById('ci-room').value=r;},50);}
 
+function paymentRowHTML(idx){
+  const POPTS=`<option value="Cash">Cash</option><option value="UPI">UPI</option><option value="PhonePe">PhonePe</option><option value="Google Pay">Google Pay</option><option value="Card">Card</option><option value="Net Banking">Net Banking</option><optgroup label="── Online Booking ──"><option value="MakeMyTrip">MakeMyTrip (MMT)</option><option value="Agoda">Agoda</option><option value="Booking.com">Booking.com</option><option value="Cleartrip">Cleartrip</option><option value="Bravistay">Bravistay</option><option value="Hotel Zify">Hotel Zify</option><option value="Others">Others</option></optgroup>`;
+  return `<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px" id="pay-row-${idx}">
+    <div><label class="form-label">Mode</label><select class="form-input" id="co-pay-mode-${idx}">${POPTS}</select></div>
+    <div><label class="form-label">Amount (₹)</label><input class="form-input" id="co-pay-amt-${idx}" type="number" placeholder="0" oninput="updatePaySummary()" style="width:100%"></div>
+    ${idx>0?`<button onclick="removePayRow(${idx})" style="background:rgba(220,38,38,.1);color:var(--rm-red);border:none;border-radius:6px;padding:7px 10px;cursor:pointer;margin-bottom:1px"><i class="ti ti-x"></i></button>`:'<div></div>'}
+  </div>`;
+}
+
 function openCheckoutModal(r){
   const d=roomData[r];
+  const existPays=d.payments||[];
+  const paidSoFar=existPays.reduce((s,p)=>s+p.amount,0);
+  const remaining=Math.max(0,(d.price||0)-paidSoFar);
   document.getElementById('checkoutModal').innerHTML=`
     <div class="modal-title">Checkout — Room ${r}<button class="modal-close" onclick="closeOverlay('checkoutOverlay')"><i class="ti ti-x"></i></button></div>
     <div class="summary-box">
@@ -713,14 +754,56 @@ function openCheckoutModal(r){
       <div class="summary-row"><span>Mobile</span><span>${d.mobile}</span></div>
       <div class="summary-row"><span>Check-in</span><span>${fmtDT(d.checkin)}</span></div>
       <div class="summary-row"><span>Check-out</span><span>${fmtDT(new Date().toISOString())}</span></div>
-      <div class="summary-row"><span>Total Bill</span><span>₹${d.price?.toLocaleString('en-IN')}</span></div>
+      <div class="summary-row"><span>Total Bill</span><span>₹${(d.price||0).toLocaleString('en-IN')}</span></div>
+      ${paidSoFar>0?`<div class="summary-row"><span>Already Paid</span><span style="color:var(--rm-green)">₹${paidSoFar.toLocaleString('en-IN')}</span></div><div class="summary-row"><span><b>Remaining</b></span><span style="color:var(--rm-red);font-weight:600">₹${remaining.toLocaleString('en-IN')}</span></div>`:''}
     </div>
-    <div class="form-group"><label class="form-label">Payment Mode</label><select class="form-input" id="co-pay"><option>Cash</option><option>UPI</option><option>PhonePe</option><option>Google Pay</option><option>Card</option><option>Net Banking</option></select></div>
+    ${existPays.length>0?`<div style="background:rgba(63,166,108,.06);border:1px solid rgba(63,166,108,.2);border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px"><div style="font-weight:500;color:var(--rm-green);margin-bottom:6px"><i class="ti ti-check"></i> Pehle ki payments</div>${existPays.map(p=>`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed rgba(0,0,0,.06)"><span>${p.mode}</span><span style="color:var(--rm-green);font-weight:500">₹${p.amount.toLocaleString('en-IN')}</span></div>`).join('')}</div>`:''}
+    <div style="font-size:12px;font-weight:500;color:var(--rm-accent);margin-bottom:8px"><i class="ti ti-wallet"></i> Is baar ki payment (split bhi kar sakte ho)</div>
+    <div id="pay-rows-wrap">${paymentRowHTML(0)}</div>
+    <button onclick="addPayRow()" style="background:rgba(212,160,23,.1);color:var(--rm-accent);border:none;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;margin-bottom:12px;font-family:inherit"><i class="ti ti-plus"></i> Payment add karo</button>
+    <div id="pay-summary" style="background:rgba(63,166,108,.08);border:1px solid rgba(63,166,108,.2);border-radius:8px;padding:10px;font-size:12px;margin-bottom:12px;display:none">
+      <div style="display:flex;justify-content:space-between"><span>Is baar pay ho raha:</span><span id="pay-now-total" style="color:var(--rm-green);font-weight:600"></span></div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px"><span>Bacha hua:</span><span id="pay-balance" style="font-weight:600"></span></div>
+    </div>
     <div class="form-group"><label class="form-label">Remarks</label><input class="form-input" id="co-note" placeholder="Optional remarks..."></div>
     <button class="btn btn-invoice" style="width:100%;margin-bottom:8px" onclick="openInvoiceForRoom(${r})"><i class="ti ti-receipt"></i> Generate Bill / Print Invoice</button>
     <button class="btn btn-primary" style="width:100%;margin-top:4px;background:var(--rm-yellow);color:#111" onclick="doCheckout(${r})"><i class="ti ti-logout"></i> Confirm Checkout</button>
   `;
   document.getElementById('checkoutOverlay').classList.add('show');
+  updatePaySummary();
+  window._coRoom=r;
+}
+
+let _payRowCount=1;
+function addPayRow(){
+  const wrap=document.getElementById('pay-rows-wrap');
+  if(!wrap)return;
+  wrap.insertAdjacentHTML('beforeend',paymentRowHTML(_payRowCount));
+  _payRowCount++;
+  updatePaySummary();
+}
+function removePayRow(idx){
+  const el=document.getElementById('pay-row-'+idx);
+  if(el)el.remove();
+  updatePaySummary();
+}
+function updatePaySummary(){
+  const r=window._coRoom;
+  if(!r)return;
+  const d=roomData[r];
+  const existPaid=(d.payments||[]).reduce((s,p)=>s+p.amount,0);
+  let nowTotal=0;
+  document.querySelectorAll('[id^="co-pay-amt-"]').forEach(el=>{nowTotal+=parseFloat(el.value)||0;});
+  const totalPaid=existPaid+nowTotal;
+  const bal=(d.price||0)-totalPaid;
+  const sumEl=document.getElementById('pay-summary');
+  if(sumEl){
+    sumEl.style.display=nowTotal>0?'block':'none';
+    const ntEl=document.getElementById('pay-now-total');
+    const balEl=document.getElementById('pay-balance');
+    if(ntEl)ntEl.textContent='₹'+nowTotal.toLocaleString('en-IN');
+    if(balEl){balEl.textContent='₹'+Math.abs(bal).toLocaleString('en-IN')+(bal<0?' (extra)':bal===0?' (full paid)':' (baki)');balEl.style.color=bal<=0?'var(--rm-green)':'var(--rm-red)';}
+  }
 }
 
 function closeOverlay(id){document.getElementById(id).classList.remove('show');}
@@ -732,21 +815,37 @@ function doCheckin(){
   const price=parseInt(document.getElementById('ci-price').value)||0,dt=document.getElementById('ci-datetime').value||new Date().toISOString().slice(0,16);
   if(!name||!mob||!room||!price){showToast('Please fill all required fields','red');return;}
   if(!/^\d{10}$/.test(mob)){showToast('Enter a valid 10-digit mobile number','red');return;}
-  roomData[room]={status:'occupied',customer:name,mobile:mob,price,checkin:dt,id:idp};
-  bookings.push({room,customer:name,mobile:mob,price,checkin:dt,checkout:null,status:'active',id:idp});
+  const ciPayMode=document.getElementById('ci-pay-mode')?.value||'';
+  const ciPayAmt=parseFloat(document.getElementById('ci-pay-amt')?.value)||0;
+  const initPays=ciPayMode&&ciPayAmt>0?[{mode:ciPayMode,amount:ciPayAmt,time:dt}]:[];
+  roomData[room]={status:'occupied',customer:name,mobile:mob,price,checkin:dt,id:idp,payments:initPays};
+  bookings.push({room,customer:name,mobile:mob,price,checkin:dt,checkout:null,status:'active',id:idp,payments:initPays,totalPaid:ciPayAmt});
   if(!customers[mob])customers[mob]={name,mobile:mob,id:idp,bookings:[]};
   customers[mob].bookings.push({room,checkin:dt,price,status:'active'});
   document.getElementById('ci-name').value='';document.getElementById('ci-mobile').value='';
   document.getElementById('ci-id').value='';document.getElementById('ci-price').value='';
+  if(document.getElementById('ci-pay-mode'))document.getElementById('ci-pay-mode').value='';
+  if(document.getElementById('ci-pay-amt'))document.getElementById('ci-pay-amt').value='';
   document.getElementById('existingCustomerBox').style.display='none';
-  saveData();renderAll();showToast(`Room ${room} booked for ${name}`);
+  const payMsg=ciPayAmt>0?` | Advance: ₹${ciPayAmt.toLocaleString('en-IN')} (${ciPayMode})`:'';
+  saveData();renderAll();showToast(`Room ${room} booked for ${name}${payMsg}`);
 }
 
 function doCheckout(r){
   const d=roomData[r],coTime=new Date().toISOString().slice(0,16);
-  const payMode=document.getElementById('co-pay')?.value||'Cash';
+  // Collect all payment rows
+  const newPays=[];
+  document.querySelectorAll('[id^="co-pay-mode-"]').forEach(sel=>{
+    const idx=sel.id.replace('co-pay-mode-','');
+    const amt=parseFloat(document.getElementById('co-pay-amt-'+idx)?.value)||0;
+    if(amt>0)newPays.push({mode:sel.value,amount:amt,time:coTime});
+  });
+  const allPays=[...(d.payments||[]),...newPays];
+  const totalPaid=allPays.reduce((s,p)=>s+p.amount,0);
+  // paymentMode for legacy compat = first mode or combined
+  const primaryMode=allPays.length===1?allPays[0].mode:allPays.length>1?allPays.map(p=>p.mode).join(' + '):'Cash';
   const b=bookings.find(x=>x.room===r&&(x.status==='active'||x.status==='checkout-pending'));
-  if(b){b.checkout=coTime;b.status='checked-out';b.paymentMode=payMode;}
+  if(b){b.checkout=coTime;b.status='checked-out';b.paymentMode=primaryMode;b.payments=allPays;b.totalPaid=totalPaid;}
   if(customers[d.mobile]){const cb=customers[d.mobile].bookings.find(x=>x.room===r);if(cb)cb.status='checked-out';}
   // Phase 1: light yellow (checkout) for 30 minutes
   roomData[r]={status:'checkout',customer:null,mobile:null,price:null,checkin:null,id:null,_checkoutTime:Date.now()};
@@ -765,6 +864,48 @@ function doCheckout(r){
       },15*60*1000);
     }
   },15*60*1000);
+}
+
+function openAddPaymentModal(r){
+  const d=roomData[r];
+  const existPays=d.payments||[];
+  const paidSoFar=existPays.reduce((s,p)=>s+p.amount,0);
+  const remaining=Math.max(0,(d.price||0)-paidSoFar);
+  const POPTS=`<option value="Cash">Cash</option><option value="UPI">UPI</option><option value="PhonePe">PhonePe</option><option value="Google Pay">Google Pay</option><option value="Card">Card</option><option value="Net Banking">Net Banking</option><optgroup label="── Online Booking ──"><option value="MakeMyTrip">MakeMyTrip (MMT)</option><option value="Agoda">Agoda</option><option value="Booking.com">Booking.com</option><option value="Cleartrip">Cleartrip</option><option value="Bravistay">Bravistay</option><option value="Hotel Zify">Hotel Zify</option><option value="Others">Others</option></optgroup>`;
+  document.getElementById('checkoutModal').innerHTML=`
+    <div class="modal-title"><i class="ti ti-wallet" style="color:var(--rm-green)"></i> &nbsp;Payment Add — Room ${r}<button class="modal-close" onclick="closeOverlay('checkoutOverlay')"><i class="ti ti-x"></i></button></div>
+    <div class="summary-box">
+      <div class="summary-row"><span>Customer</span><span>${d.customer}</span></div>
+      <div class="summary-row"><span>Total Bill</span><span>₹${(d.price||0).toLocaleString('en-IN')}</span></div>
+      <div class="summary-row"><span>Already Paid</span><span style="color:var(--rm-green)">₹${paidSoFar.toLocaleString('en-IN')}</span></div>
+      <div class="summary-row"><span><b>Remaining</b></span><span style="color:var(--rm-red);font-weight:600">₹${remaining.toLocaleString('en-IN')}</span></div>
+    </div>
+    ${existPays.length>0?`<div style="background:rgba(63,166,108,.06);border:1px solid rgba(63,166,108,.2);border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px"><div style="font-weight:500;color:var(--rm-green);margin-bottom:6px"><i class="ti ti-history"></i> Payment History</div>${existPays.map(p=>`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed rgba(0,0,0,.06)"><span>${p.mode} <span style="color:var(--rm-muted);font-size:10px">${p.time?fmtDT(p.time):''}</span></span><span style="color:var(--rm-green);font-weight:500">₹${p.amount.toLocaleString('en-IN')}</span></div>`).join('')}</div>`:''}
+    <div style="font-size:12px;font-weight:500;color:var(--rm-accent);margin-bottom:10px"><i class="ti ti-plus"></i> Naya Payment</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div class="form-group"><label class="form-label">Payment Mode</label><select class="form-input" id="mp-mode">${POPTS}</select></div>
+      <div class="form-group"><label class="form-label">Amount (₹)</label><input class="form-input" id="mp-amt" type="number" placeholder="${remaining}" value="${remaining}"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Note (optional)</label><input class="form-input" id="mp-note" placeholder="e.g. partial payment"></div>
+    <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,var(--rm-green),var(--rm-accent3))" onclick="saveAddPayment(${r})"><i class="ti ti-check"></i> Payment Save Karo</button>
+  `;
+  document.getElementById('checkoutOverlay').classList.add('show');
+}
+
+function saveAddPayment(r){
+  const mode=document.getElementById('mp-mode')?.value||'Cash';
+  const amt=parseFloat(document.getElementById('mp-amt')?.value)||0;
+  if(amt<=0){showToast('Valid amount enter karo','red');return;}
+  const now=new Date().toISOString().slice(0,16);
+  if(!roomData[r].payments)roomData[r].payments=[];
+  roomData[r].payments.push({mode,amount:amt,time:now});
+  const totalPaid=roomData[r].payments.reduce((s,p)=>s+p.amount,0);
+  roomData[r].totalPaid=totalPaid;
+  // also update in bookings array
+  const b=bookings.find(x=>x.room===r&&x.status==='active');
+  if(b){b.payments=roomData[r].payments;b.totalPaid=totalPaid;}
+  saveData();renderAll();closeOverlay('checkoutOverlay');
+  showToast(`✅ ₹${amt.toLocaleString('en-IN')} (${mode}) payment save ho gaya — Room ${r}`);
 }
 
 function setMaintenance(r){roomData[r].status='maintenance';saveData();renderAll();}
@@ -817,31 +958,98 @@ function renderRevStats(){
   const all=filteredBookings.reduce((s,b)=>s+b.price,0);
   const done=filteredBookings.filter(b=>b.status==='checked-out').reduce((s,b)=>s+b.price,0);
   const pend=filteredBookings.filter(b=>b.status==='active').reduce((s,b)=>s+b.price,0);
-  const cash=filteredBookings.filter(b=>b.status==='checked-out'&&(!b.paymentMode||b.paymentMode==='Cash')).reduce((s,b)=>s+b.price,0);
-  const upi=filteredBookings.filter(b=>b.status==='checked-out'&&b.paymentMode==='UPI').reduce((s,b)=>s+b.price,0);
-  const phonepe=filteredBookings.filter(b=>b.status==='checked-out'&&b.paymentMode==='PhonePe').reduce((s,b)=>s+b.price,0);
-  const gpay=filteredBookings.filter(b=>b.status==='checked-out'&&b.paymentMode==='Google Pay').reduce((s,b)=>s+b.price,0);
-  const card=filteredBookings.filter(b=>b.status==='checked-out'&&b.paymentMode==='Card').reduce((s,b)=>s+b.price,0);
-  const netbank=filteredBookings.filter(b=>b.status==='checked-out'&&b.paymentMode==='Net Banking').reduce((s,b)=>s+b.price,0);
+
+  // helper: amount by paymentMode string (handles split like "Cash + UPI")
+  function amtByMode(mode){
+    return filteredBookings.filter(b=>b.status==='checked-out').reduce((s,b)=>{
+      // new split payments array
+      if(b.payments&&b.payments.length>0){
+        return s+b.payments.filter(p=>p.mode===mode).reduce((a,p)=>a+p.amount,0);
+      }
+      // legacy single paymentMode
+      return s+(b.paymentMode===mode?b.price:0);
+    },0);
+  }
+  function amtCash(){
+    return filteredBookings.filter(b=>b.status==='checked-out').reduce((s,b)=>{
+      if(b.payments&&b.payments.length>0) return s+b.payments.filter(p=>p.mode==='Cash').reduce((a,p)=>a+p.amount,0);
+      return s+((!b.paymentMode||b.paymentMode==='Cash')?b.price:0);
+    },0);
+  }
+
+  const cash=amtCash();
+  const upi=amtByMode('UPI');
+  const phonepe=amtByMode('PhonePe');
+  const gpay=amtByMode('Google Pay');
+  const card=amtByMode('Card');
+  const netbank=amtByMode('Net Banking');
+  const mmt=amtByMode('MakeMyTrip');
+  const agoda=amtByMode('Agoda');
+  const bookingcom=amtByMode('Booking.com');
+  const cleartrip=amtByMode('Cleartrip');
+  const bravistay=amtByMode('Bravistay');
+  const hotelzify=amtByMode('Hotel Zify');
+  const others=amtByMode('Others');
 
   const totalExp=expenses.reduce((s,e)=>s+e.amount,0);
   const net=done-totalExp;
 
+  // stat card helper — hamesha dikhega chahe 0 ho
+  function sc(label,icon,val,color){
+    return `<div class="stat-card" style="border-top:3px solid ${color}"><div class="stat-label"><i class="ti ti-${icon}"></i> ${label}</div><div class="stat-val" style="color:${color}">₹${val.toLocaleString('en-IN')}</div></div>`;
+  }
+
   document.getElementById('revStats').innerHTML=`
     <div class="stat-card" style="border-top:3px solid var(--rm-accent)"><div class="stat-label"><i class="ti ti-report-money"></i> Total Revenue</div><div class="stat-val accent">₹${all.toLocaleString('en-IN')}</div></div>
     <div class="stat-card" style="border-top:3px solid var(--rm-green)"><div class="stat-label"><i class="ti ti-cash"></i> Cash</div><div class="stat-val green">₹${cash.toLocaleString('en-IN')}</div></div>
-    <div class="stat-card" style="border-top:3px solid var(--rm-blue)"><div class="stat-label"><i class="ti ti-qrcode"></i> UPI / Online</div><div class="stat-val" style="color:var(--rm-blue)">₹${upi.toLocaleString('en-IN')}</div></div>
-    <div class="stat-card" style="border-top:3px solid #6e1ec8"><div class="stat-label"><i class="ti ti-device-mobile"></i> PhonePe</div><div class="stat-val" style="color:#6e1ec8">₹${phonepe.toLocaleString('en-IN')}</div></div>
-  `;
-  if(document.getElementById('revStats2'))document.getElementById('revStats2').innerHTML=`
-    <div class="stat-card" style="border-top:3px solid #1a73e8"><div class="stat-label"><i class="ti ti-brand-google"></i> Google Pay</div><div class="stat-val" style="color:#1a73e8">₹${gpay.toLocaleString('en-IN')}</div></div>
-    <div class="stat-card" style="border-top:3px solid var(--rm-accent2)"><div class="stat-label"><i class="ti ti-credit-card"></i> Card</div><div class="stat-val accent2">₹${card.toLocaleString('en-IN')}</div></div>
-    <div class="stat-card" style="border-top:3px solid var(--rm-accent3)"><div class="stat-label"><i class="ti ti-building-bank"></i> Net Banking</div><div class="stat-val accent3">₹${netbank.toLocaleString('en-IN')}</div></div>
     <div class="stat-card" style="border-top:3px solid var(--rm-yellow)"><div class="stat-label"><i class="ti ti-clock"></i> Pending</div><div class="stat-val yellow">₹${pend.toLocaleString('en-IN')}</div></div>
     <div class="stat-card" style="border-top:3px solid var(--rm-red)"><div class="stat-label"><i class="ti ti-receipt-2"></i> Total Expenses</div><div class="stat-val red">₹${totalExp.toLocaleString('en-IN')}</div></div>
     <div class="stat-card" style="border-top:3px solid ${net>=0?'var(--rm-accent3)':'var(--rm-red)'}"><div class="stat-label"><i class="ti ti-trending-up"></i> Net Profit</div><div class="stat-val ${net>=0?'green':'red'}">₹${net.toLocaleString('en-IN')}</div></div>
   `;
-  document.getElementById('revTbody').innerHTML=filteredBookings.map(b=>`<tr><td><b>${b.room}</b></td><td>${b.customer}</td><td>₹${b.price.toLocaleString('en-IN')}</td><td><span style="font-size:11px;padding:2px 7px;border-radius:20px;background:${(!b.paymentMode||b.paymentMode==='Cash')?'rgba(63,166,108,.12)':'rgba(111,179,224,.2)'};color:${(!b.paymentMode||b.paymentMode==='Cash')?'var(--rm-green)':'#2c6ea3'}">${b.paymentMode||'Cash'}</span></td><td>${fmtDT(b.checkin)}</td><td>${b.checkout?fmtDT(b.checkout):'—'}</td><td><span class="badge ${b.status==='checked-out'?'badge-green':'badge-red'}">${b.status==='checked-out'?'Collected':'Pending'}</span></td></tr>`).join('');
+
+  // Saare platforms — hamesha dikhao chahe 0 ho
+  if(document.getElementById('revStats2')){
+    document.getElementById('revStats2').style.gridTemplateColumns='repeat(auto-fill,minmax(140px,1fr))';
+    document.getElementById('revStats2').innerHTML=
+      sc('UPI','qrcode',upi,'var(--rm-blue)')+
+      sc('PhonePe','device-mobile',phonepe,'#6e1ec8')+
+      sc('Google Pay','brand-google',gpay,'#1a73e8')+
+      sc('Card','credit-card',card,'var(--rm-accent2)')+
+      sc('Net Banking','building-bank',netbank,'var(--rm-accent3)')+
+      sc('MakeMyTrip (MMT)','plane',mmt,'#e74c3c')+
+      sc('Agoda','bed',agoda,'#e67e22')+
+      sc('Booking.com','world',bookingcom,'#2980b9')+
+      sc('Cleartrip','map-pin',cleartrip,'#16a085')+
+      sc('Bravistay','building-hotel',bravistay,'#8e44ad')+
+      sc('Hotel Zify','star',hotelzify,'#d35400')+
+      sc('Others','dots-circle-horizontal',others,'#7f8c8d');
+  }
+
+  // payment badge color helper
+  function pmBadge(mode){
+    const map={
+      'Cash':['rgba(63,166,108,.12)','var(--rm-green)'],
+      'UPI':['rgba(111,179,224,.2)','#2c6ea3'],
+      'PhonePe':['rgba(110,30,200,.12)','#6e1ec8'],
+      'Google Pay':['rgba(26,115,232,.12)','#1a73e8'],
+      'Card':['rgba(240,199,94,.2)','var(--rm-accent2)'],
+      'Net Banking':['rgba(63,166,108,.12)','var(--rm-accent3)'],
+      'MakeMyTrip':['rgba(231,76,60,.12)','#e74c3c'],
+      'Agoda':['rgba(230,126,34,.12)','#e67e22'],
+      'Booking.com':['rgba(41,128,185,.12)','#2980b9'],
+      'Cleartrip':['rgba(22,160,133,.12)','#16a085'],
+      'Bravistay':['rgba(142,68,173,.12)','#8e44ad'],
+      'Hotel Zify':['rgba(211,84,0,.12)','#d35400'],
+      'Others':['rgba(127,140,141,.12)','#7f8c8d'],
+    };
+    const m=map[mode]||map['Cash'];
+    return `background:${m[0]};color:${m[1]}`;
+  }
+
+  document.getElementById('revTbody').innerHTML=filteredBookings.map(b=>{
+    const displayMode=b.payments&&b.payments.length>1?b.payments.map(p=>p.mode).join(' + '):(b.paymentMode||'Cash');
+    return `<tr><td><b>${b.room}</b></td><td>${b.customer}</td><td>₹${b.price.toLocaleString('en-IN')}</td><td><span style="font-size:11px;padding:2px 7px;border-radius:20px;${pmBadge(b.payments&&b.payments.length===1?b.payments[0].mode:b.paymentMode||'Cash')}">${displayMode}</span></td><td>${fmtDT(b.checkin)}</td><td>${b.checkout?fmtDT(b.checkout):'—'}</td><td><span class="badge ${b.status==='checked-out'?'badge-green':'badge-red'}">${b.status==='checked-out'?'Collected':'Pending'}</span></td></tr>`;
+  }).join('');
 }
 
 function addExpense(){
@@ -895,7 +1103,7 @@ function renderExpenses(){
   const adminRows=filtered.length?filtered.slice().reverse().map(e=>`<tr>
     <td>${e.date}</td><td>${e.category}</td><td style="color:var(--rm-red);font-weight:500">₹${e.amount.toLocaleString('en-IN')}</td>
     <td style="color:var(--rm-muted)">${e.note||'—'}</td>
-    <td><button class="btn" style="background:rgba(220,38,38,.1);color:var(--rm-red)" onclick="deleteExpense(${e.id})"><i class="ti ti-trash"></i></button></td>
+    <td><button class="btn" style="background:rgba(220,38,38,.1);color:var(--rm-red)" onclick="promptDeleteExpense(${e.id})"><i class="ti ti-trash"></i></button></td>
   </tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--rm-muted);padding:20px">Koi expense nahi mila</td></tr>';
 
   const viewRows=filtered.length?filtered.slice().reverse().map(e=>`<tr>
@@ -1304,6 +1512,7 @@ function setPwd(key,val){localStorage.setItem('hpwd_'+key,val);}
 // ── Role & Login ──────────────────────────────────────────────
 let currentRole=null; // 'admin' | 'viewer'
 let pendingDeleteIndex=null;
+let pendingDeleteExpId=null;
 
 function doLogin(){
   const u=document.getElementById('loginUser').value.trim().toUpperCase();
@@ -1361,13 +1570,29 @@ function adminOnly(fn){
 function promptDeleteBooking(i){
   if(currentRole!=='admin'){showToast('Sirf Admin delete kar sakta hai','red');return;}
   pendingDeleteIndex=i;
+  pendingDeleteExpId=null;
+  document.getElementById('deletePassDesc').textContent='Yeh booking permanently delete ho jaayegi. Aage badhne ke liye delete password enter karo.';
+  document.getElementById('deletePassBtn').innerHTML='<i class="ti ti-trash"></i> Delete Booking';
   document.getElementById('deletePassInput').value='';
   document.getElementById('deletePassErr').style.display='none';
   document.getElementById('deletePassOverlay').classList.add('show');
   setTimeout(()=>document.getElementById('deletePassInput').focus(),100);
 }
 
-function confirmDeleteBooking(){
+// ── Delete expense (password protected) ──────────────────────
+function promptDeleteExpense(id){
+  if(currentRole!=='admin'){showToast('Sirf Admin delete kar sakta hai','red');return;}
+  pendingDeleteExpId=id;
+  pendingDeleteIndex=null;
+  document.getElementById('deletePassDesc').textContent='Yeh expense permanently delete ho jaayega. Aage badhne ke liye delete password enter karo.';
+  document.getElementById('deletePassBtn').innerHTML='<i class="ti ti-trash"></i> Delete Expense';
+  document.getElementById('deletePassInput').value='';
+  document.getElementById('deletePassErr').style.display='none';
+  document.getElementById('deletePassOverlay').classList.add('show');
+  setTimeout(()=>document.getElementById('deletePassInput').focus(),100);
+}
+
+function confirmDelete(){
   const p=document.getElementById('deletePassInput').value;
   const delPwd=getPwd('delete','admin835');
   if(p!==delPwd){
@@ -1379,10 +1604,17 @@ function confirmDeleteBooking(){
     bookings.splice(pendingDeleteIndex,1);
     saveData();renderHistoryTable();renderRevStats();renderStats();
     showToast('Booking delete ho gayi');
+  }else if(pendingDeleteExpId!==null){
+    expenses=expenses.filter(e=>e.id!==pendingDeleteExpId);
+    saveData();renderExpenses();renderRevStats();
+    showToast('Expense delete ho gaya');
   }
   closeOverlay('deletePassOverlay');
   pendingDeleteIndex=null;
+  pendingDeleteExpId=null;
 }
+
+function confirmDeleteBooking(){confirmDelete();}
 
 // ── Password Change ───────────────────────────────────────────
 function changePassword(type){
