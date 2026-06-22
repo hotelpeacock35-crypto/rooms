@@ -449,7 +449,7 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
       <div class="stats-row" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr));margin-top:0" id="revStats2"></div>
       <div class="chart-card" style="max-width:760px;margin-top:16px">
         <div class="section-title">Revenue by Room</div>
-        <canvas id="roomRevenueChart" height="120"></canvas>
+        <div style="position:relative;height:220px;width:100%"><canvas id="roomRevenueChart"></canvas></div>
       </div>
       <div style="margin-top:16px">
         <div style="font-size:12px;color:var(--rm-muted);margin-bottom:10px">Payment Records</div>
@@ -657,10 +657,12 @@ function listenFirebase(){
     const val=snap.val();
     if(val){
       roomData=val.roomData||{};
-      bookings=val.bookings||[];
+      bookings=Array.isArray(val.bookings)?val.bookings:[];
       customers=val.customers||{};
-      expenses=val.expenses||[];
-      transfers=val.transfers||[];
+      // expenses can come as array or object (older saves) — normalize to array
+      const rawExp=val.expenses;
+      expenses=Array.isArray(rawExp)?rawExp:(rawExp&&typeof rawExp==='object'?Object.values(rawExp):[]);
+      transfers=Array.isArray(val.transfers)?val.transfers:[];
     }
     ROOMS.forEach(r=>{if(!roomData[r])roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};});
     if(!firstSnapshotReceived){
@@ -1107,13 +1109,15 @@ function renderRevStats(){
   const filter=document.getElementById('revMonthFilter')?.value||'all';
   const today=new Date().toISOString().split('T')[0];
   const thisMonth=today.slice(0,7);
-  let filteredBookings=bookings;
-  if(filter==='today')filteredBookings=bookings.filter(b=>b.checkout&&b.checkout.startsWith(today));
-  else if(filter==='thismonth')filteredBookings=bookings.filter(b=>b.checkout&&b.checkout.startsWith(thisMonth));
+  // 'transferred' segments hide karo — ye internal segments hain
+  let filteredBookings=bookings.filter(b=>b.status!=='transferred');
+  if(filter==='today')filteredBookings=filteredBookings.filter(b=>b.checkout&&b.checkout.startsWith(today));
+  else if(filter==='thismonth')filteredBookings=filteredBookings.filter(b=>b.checkout&&b.checkout.startsWith(thisMonth));
 
-  const all=filteredBookings.reduce((s,b)=>s+b.price,0);
+  // Total Revenue = sirf checked-out bookings (actually collected amount)
   const done=filteredBookings.filter(b=>b.status==='checked-out').reduce((s,b)=>s+b.price,0);
-  const pend=filteredBookings.filter(b=>b.status==='active').reduce((s,b)=>s+b.price,0);
+  const all=done;
+  const pend=filteredBookings.filter(b=>b.status==='active'||b.status==='checkout-pending').reduce((s,b)=>s+b.price,0);
 
   // helper: amount by paymentMode string (handles split like "Cash + UPI")
   function amtByMode(mode){
@@ -1206,6 +1210,22 @@ function renderRevStats(){
     const displayMode=b.payments&&b.payments.length>1?b.payments.map(p=>p.mode).join(' + '):(b.paymentMode||'Cash');
     return `<tr><td><b>${b.room}</b></td><td>${b.customer}</td><td>₹${b.price.toLocaleString('en-IN')}</td><td><span style="font-size:11px;padding:2px 7px;border-radius:20px;${pmBadge(b.payments&&b.payments.length===1?b.payments[0].mode:b.paymentMode||'Cash')}">${displayMode}</span></td><td>${fmtDT(b.checkin)}</td><td>${b.checkout?fmtDT(b.checkout):'—'}</td><td><span class="badge ${b.status==='checked-out'?'badge-green':'badge-red'}">${b.status==='checked-out'?'Collected':'Pending'}</span></td></tr>`;
   }).join('');
+
+  // Revenue by Room chart — filter ke hisaab se update karo
+  const elRoom=document.getElementById('roomRevenueChart');
+  if(elRoom&&typeof Chart!=='undefined'){
+    if(roomRevenueChart){roomRevenueChart.destroy();roomRevenueChart=null;}
+    const palette=['#d4a017','#f0c75e','#3fa66c','#6fb3e0'];
+    const roomLabels=ROOMS.map(r=>'Room '+r);
+    const roomData2=ROOMS.map(r=>filteredBookings.filter(b=>b.room===r&&b.status==='checked-out').reduce((a,b)=>a+b.price,0));
+    const colors=ROOMS.map((r,i)=>palette[i%palette.length]);
+    roomRevenueChart=new Chart(elRoom,{
+      type:'bar',
+      data:{labels:roomLabels,datasets:[{label:'Revenue',data:roomData2,backgroundColor:colors,borderRadius:5,maxBarThickness:34}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'₹'+c.parsed.y.toLocaleString('en-IN')}}},
+        scales:{y:{beginAtZero:true,ticks:{color:'#767b88',font:{size:10},callback:v=>'₹'+v.toLocaleString('en-IN')},grid:{color:'#e1e4ea'}},x:{ticks:{color:'#767b88',font:{size:9}},grid:{display:false}}}}
+    });
+  }
 }
 
 function addExpense(){
@@ -1355,16 +1375,16 @@ function showSection(name,el){
     if(td&&!td.value){const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());td.value=d.toISOString().split('T')[0];}
     renderExpenses();
   }
-  if(name==='revenue')renderRevStats();
+  if(name==='revenue'){renderRevStats();setTimeout(renderCharts,50);}
   if(name==='transfers')renderTransferTable();
-  renderCharts();
+  if(name!=='revenue')renderCharts();
 }
 
 let roomStatusChart=null,dashRevenueChart=null,roomRevenueChart=null;
 
 function destroyCharts(){
-  [roomStatusChart,dashRevenueChart,roomRevenueChart].forEach(c=>{if(c)c.destroy();});
-  roomStatusChart=null;dashRevenueChart=null;roomRevenueChart=null;
+  [roomStatusChart,dashRevenueChart].forEach(c=>{if(c)c.destroy();});
+  roomStatusChart=null;dashRevenueChart=null;
 }
 
 function renderCharts(){
@@ -1373,39 +1393,29 @@ function renderCharts(){
   const s=getStats();
   const maint=ROOMS.filter(r=>roomData[r].status==='maintenance').length;
   const elStatus=document.getElementById('roomStatusChart');
-  if(elStatus&&elStatus.offsetParent!==null){
+  if(elStatus){
+    if(roomStatusChart){roomStatusChart.destroy();roomStatusChart=null;}
     roomStatusChart=new Chart(elStatus,{
       type:'doughnut',
       data:{labels:['Available','Occupied','Checkout Due','Maintenance'],
-        datasets:[{data:[s.avail,s.occ,s.co,maint],backgroundColor:['#3fa66c','#dc2626','#d9a83a','#6b7280'],borderColor:'#fff',borderWidth:2}]},
-      options:{responsive:true,cutout:'62%',plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12,font:{size:11},color:'#767b88'}}}}
+        datasets:[{data:[s.avail,s.occ,s.co,maint],backgroundColor:['#3fa66c','#6fb3e0','#d9a83a','#6b7280'],borderColor:'#fff',borderWidth:2}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12,font:{size:11},color:'#767b88'}}}}
     });
   }
   const done=bookings.filter(b=>b.status==='checked-out').reduce((a,b)=>a+b.price,0);
-  const pend=bookings.filter(b=>b.status!=='checked-out').reduce((a,b)=>a+b.price,0);
+  const pend=bookings.filter(b=>(b.status==='active'||b.status==='checkout-pending')).reduce((a,b)=>a+b.price,0);
   const elDash=document.getElementById('dashRevenueChart');
-  if(elDash&&elDash.offsetParent!==null){
+  if(elDash){
+    if(dashRevenueChart){dashRevenueChart.destroy();dashRevenueChart=null;}
     dashRevenueChart=new Chart(elDash,{
       type:'bar',
       data:{labels:['Collected','Pending'],datasets:[{data:[done,pend],backgroundColor:['#3fa66c','#6fb3e0'],borderRadius:6,maxBarThickness:60}]},
-      options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'₹'+c.parsed.y.toLocaleString('en-IN')}}},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'₹'+c.parsed.y.toLocaleString('en-IN')}}},
         scales:{y:{beginAtZero:true,ticks:{color:'#767b88',font:{size:10},callback:v=>'₹'+v.toLocaleString('en-IN')},grid:{color:'#e1e4ea'}},x:{ticks:{color:'#767b88',font:{size:11}},grid:{display:false}}}}
     });
   }
-  const elRoom=document.getElementById('roomRevenueChart');
-  if(elRoom&&elRoom.offsetParent!==null){
-    const palette=['#d4a017','#f0c75e','#3fa66c','#6fb3e0'];
-    const labels=ROOMS.map(r=>r);
-    const data=ROOMS.map(r=>bookings.filter(b=>b.room===r).reduce((a,b)=>a+b.price,0));
-    const colors=ROOMS.map((r,i)=>palette[i%palette.length]);
-    roomRevenueChart=new Chart(elRoom,{
-      type:'bar',
-      data:{labels,datasets:[{data,backgroundColor:colors,borderRadius:5,maxBarThickness:34}]},
-      options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'₹'+c.parsed.y.toLocaleString('en-IN')}}},
-        scales:{y:{beginAtZero:true,ticks:{color:'#767b88',font:{size:10},callback:v=>'₹'+v.toLocaleString('en-IN')},grid:{color:'#e1e4ea'}},x:{ticks:{color:'#767b88',font:{size:10}},grid:{display:false}}}}
-    });
-  }
 }
+// Revenue by Room chart is handled inside renderRevStats() with filter support
 
 function showToast(msg,color='green'){
   const t=document.getElementById('toast');t.textContent=msg;t.style.borderLeftColor=color==='red'?'var(--rm-red)':'var(--rm-green)';t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);
@@ -2083,15 +2093,15 @@ function clearAllData(){
   }
   document.getElementById('clearAllErr').style.display='none';
   document.getElementById('clearAllPass').value='';
-  // Reset everything
+  // Reset local state first (expenses was incorrectly set to {} before — fixed to [])
   bookings=[];
   customers={};
-  expenses={};
+  expenses=[];
   transfers=[];
-  ROOMS.forEach(r=>{roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};});
-  // Clear Firebase
-  hotelRef.set({roomData,bookings:[],customers:{},expenses:[],transfers:[]}).catch(e=>console.warn('Firebase clear failed',e));
-  // Clear localStorage
+  const emptyRooms={};
+  ROOMS.forEach(r=>{emptyRooms[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};});
+  roomData=emptyRooms;
+  // Clear localStorage immediately
   try{
     localStorage.removeItem('hms_roomData');
     localStorage.removeItem('hms_bookings');
@@ -2099,8 +2109,17 @@ function clearAllData(){
     localStorage.removeItem('hms_expenses');
     localStorage.removeItem('hms_transfers');
   }catch(e){}
+  // Render with cleared data first
   renderAll();
-  showToast('✅ Saara data successfully delete ho gaya!');
+  showToast('🔄 Data clear ho raha hai...');
+  // Push cleared state to Firebase
+  const clearPayload={roomData,bookings:[],customers:{},expenses:[],transfers:[]};
+  hotelRef.set(clearPayload).then(()=>{
+    showToast('✅ Saara data successfully delete ho gaya!');
+  }).catch(e=>{
+    console.warn('Firebase clear failed',e);
+    showToast('⚠️ Firebase clear fail hua — internet check karo aur dobara try karo','red');
+  });
 }
 
 // ── Password Change ───────────────────────────────────────────
