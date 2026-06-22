@@ -132,8 +132,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 @media print{
   body *{visibility:hidden}
   #invoiceContent,#invoiceContent *{visibility:visible}
-  #invoiceContent{position:absolute;left:0;top:0;width:100%;padding:10px}
+  #invoiceContent{position:absolute;left:0;top:0;width:100%;padding:16px}
   .no-print{display:none!important}
+  .inv-wrap{font-family:Arial,sans-serif!important;color:#000!important;background:#fff!important;padding:0}
+  .inv-title{color:#000!important;font-size:22px!important}
+  .inv-address,.inv-contact,.inv-gstbox{color:#000!important}
+  .inv-taxbadge{background:#000!important;color:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .inv-box{border:1.5px solid #000!important;border-radius:0!important}
+  .inv-field b{color:#000!important}
+  .inv-field span{border-bottom:1px dotted #666!important;color:#000!important}
+  .inv-table-wrap{border:1.5px solid #000!important;border-radius:0!important}
+  .inv-table th{background:#000!important;color:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .inv-table td{color:#000!important;border-color:#999!important}
+  .inv-total-row td{background:#eee!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;color:#000!important;border-color:#000!important}
+  .inv-pill-wrap{border:1.5px solid #000!important;border-radius:0!important}
+  .inv-pill{background:#000!important;color:#fff!important;border-radius:0!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .inv-amt-row{color:#000!important;border-color:#999!important}
+  .inv-net-bar{background:#000!important;color:#fff!important;border-radius:0!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .inv-service-col i,.inv-service-col .lbl,.inv-service-col .val{color:#000!important}
+  .inv-tax-box{border:1.5px solid #000!important;border-radius:0!important;color:#000!important}
+  .inv-footer{border-color:#999!important;color:#000!important}
+  .inv-ornament{color:#000!important}
+  .inv-hr{border-top:2px solid #000!important}
+  * {-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 .section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
 .section-title{font-size:15px;font-weight:500}
@@ -229,7 +250,11 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
     <button class="nav-item" onclick="showSection('guests',this)"><i class="ti ti-history"></i> Booking History</button>
     <button class="nav-item" onclick="showSection('revenue',this)"><i class="ti ti-report-money"></i> Revenue</button>
     <button class="nav-item" onclick="showSection('expenses',this)"><i class="ti ti-receipt-2"></i> Expenses</button>
+    <button class="nav-item" id="settingsNavBtn" onclick="showSection('settings',this)" style="display:none"><i class="ti ti-settings"></i> Settings</button>
   </div>
+  <div style="padding:10px 8px;border-top:1px solid var(--rm-border)">
+    <div id="roleTag" style="font-size:10px;padding:4px 10px;border-radius:20px;background:rgba(212,160,23,.12);color:var(--rm-accent);font-weight:500;margin-bottom:8px;text-align:center"></div>
+    <button class="nav-item" onclick="doLogout()" style="color:var(--rm-red);width:100%"><i class="ti ti-logout"></i> Logout</button>
 </nav>
 
 <div class="main">
@@ -339,6 +364,36 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
     <div class="section-view" id="sec-customers" style="display:none!important"></div>
     <div class="section-view" id="sec-history" style="display:none!important"></div>
 
+    <div class="section-view" id="sec-settings">
+      <div class="section-header"><div class="section-title"><i class="ti ti-settings"></i> Settings — Password Management</div></div>
+      <div style="max-width:480px;display:flex;flex-direction:column;gap:16px">
+
+        <div style="background:var(--rm-card);border:1px solid var(--rm-border);border-radius:12px;padding:20px">
+          <div style="font-size:13px;font-weight:500;color:var(--rm-accent);margin-bottom:14px"><i class="ti ti-key"></i> Change Admin Password</div>
+          <div class="form-group"><label class="form-label">Current Admin Password</label><input class="form-input" id="chg-old-admin" type="password" placeholder="Current password"></div>
+          <div class="form-group"><label class="form-label">New Password</label><input class="form-input" id="chg-new-admin" type="password" placeholder="New password"></div>
+          <div class="form-group"><label class="form-label">Confirm New Password</label><input class="form-input" id="chg-confirm-admin" type="password" placeholder="Confirm new password"></div>
+          <button class="btn btn-primary" style="width:100%" onclick="changePassword('admin')"><i class="ti ti-check"></i> Update Admin Password</button>
+        </div>
+
+        <div style="background:var(--rm-card);border:1px solid var(--rm-border);border-radius:12px;padding:20px">
+          <div style="font-size:13px;font-weight:500;color:var(--rm-blue);margin-bottom:14px"><i class="ti ti-eye"></i> Change View-Only Password</div>
+          <div class="form-group"><label class="form-label">Current Admin Password (required)</label><input class="form-input" id="chg-old-view" type="password" placeholder="Admin password to authorize"></div>
+          <div class="form-group"><label class="form-label">New View-Only Password</label><input class="form-input" id="chg-new-view" type="password" placeholder="New view password"></div>
+          <div class="form-group"><label class="form-label">Confirm New Password</label><input class="form-input" id="chg-confirm-view" type="password" placeholder="Confirm new password"></div>
+          <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,#6fb3e0,#3fa66c)" onclick="changePassword('view')"><i class="ti ti-check"></i> Update View Password</button>
+        </div>
+
+        <div style="background:var(--rm-card);border:1px solid var(--rm-border);border-radius:12px;padding:20px">
+          <div style="font-size:13px;font-weight:500;color:var(--rm-red);margin-bottom:14px"><i class="ti ti-shield-lock"></i> Change Delete Password</div>
+          <div class="form-group"><label class="form-label">Current Admin Password (required)</label><input class="form-input" id="chg-old-del" type="password" placeholder="Admin password to authorize"></div>
+          <div class="form-group"><label class="form-label">New Delete Password</label><input class="form-input" id="chg-new-del" type="password" placeholder="New delete password"></div>
+          <div class="form-group"><label class="form-label">Confirm New Password</label><input class="form-input" id="chg-confirm-del" type="password" placeholder="Confirm new password"></div>
+          <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,#dc2626,#d9a83a)" onclick="changePassword('delete')"><i class="ti ti-check"></i> Update Delete Password</button>
+        </div>
+      </div>
+    </div>
+
     <div class="section-view" id="sec-revenue">
       <div class="section-header">
         <div class="section-title">Revenue Summary</div>
@@ -370,7 +425,7 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
 
     <div class="section-view" id="sec-expenses">
       <div class="section-header">
-        <div class="section-title">Today's Expenses</div>
+        <div class="section-title">Expenses</div>
         <div class="filter-row">
           <select class="filter-select" id="expFilter" onchange="renderExpenses()">
             <option value="today">Today</option>
@@ -379,7 +434,7 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
           </select>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:start">
+      <div id="expAddPanel" style="display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:start">
         <div style="background:var(--rm-card);border:1px solid var(--rm-border);border-radius:12px;padding:18px">
           <div style="font-size:13px;font-weight:500;margin-bottom:14px;color:var(--rm-accent)"><i class="ti ti-plus"></i> Add Expense</div>
           <div class="form-group">
@@ -409,15 +464,25 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
           </div>
           <button class="btn btn-primary" style="width:100%" onclick="addExpense()"><i class="ti ti-check"></i> Add Expense</button>
         </div>
-        <div>
+        <div id="expTableWrap">
           <div class="stats-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px" id="expStats"></div>
           <div style="font-size:12px;color:var(--rm-muted);margin-bottom:8px">Expense Records</div>
           <div style="overflow-x:auto">
             <table class="history-table">
-              <thead><tr><th>Date</th><th>Category</th><th>Amount</th><th>Note</th><th>Action</th></tr></thead>
+              <thead><tr><th>Date</th><th>Category</th><th>Amount</th><th>Note</th><th id="expActionHead">Action</th></tr></thead>
               <tbody id="expTbody"></tbody>
             </table>
           </div>
+        </div>
+      </div>
+      <div id="expViewPanel" style="display:none">
+        <div class="stats-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px" id="expStatsView"></div>
+        <div style="font-size:12px;color:var(--rm-muted);margin-bottom:8px">Expense Records</div>
+        <div style="overflow-x:auto">
+          <table class="history-table">
+            <thead><tr><th>Date</th><th>Category</th><th>Amount</th><th>Note</th></tr></thead>
+            <tbody id="expTbodyView"></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -435,6 +500,16 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
 
 <div class="overlay" id="billFormOverlay">
   <div class="modal" id="billFormModal" style="width:560px;max-width:95vw"></div>
+</div>
+
+<div class="overlay" id="deletePassOverlay">
+  <div class="modal" style="width:360px;max-width:95vw">
+    <div class="modal-title"><i class="ti ti-shield-lock" style="color:var(--rm-red)"></i> &nbsp;Delete Confirmation<button class="modal-close" onclick="closeOverlay('deletePassOverlay')"><i class="ti ti-x"></i></button></div>
+    <div style="font-size:12px;color:var(--rm-muted);margin-bottom:14px">Yeh booking permanently delete ho jaayegi. Aage badhne ke liye delete password enter karo.</div>
+    <div class="form-group"><label class="form-label">Delete Password</label><input class="form-input" id="deletePassInput" type="password" placeholder="Enter delete password" onkeydown="if(event.key==='Enter')confirmDeleteBooking()"></div>
+    <div id="deletePassErr" style="display:none;font-size:11px;color:var(--rm-red);margin-bottom:8px"><i class="ti ti-alert-circle"></i> Galat password!</div>
+    <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,#dc2626,#b91c1c)" onclick="confirmDeleteBooking()"><i class="ti ti-trash"></i> Delete Booking</button>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -599,10 +674,11 @@ function statusLabel(s){return{available:'Available',occupied:'Occupied',checkou
 
 function roomCardHTML(r,d){
   let actions='';
-  if(d.status==='available')actions=`<button class="btn btn-checkin" onclick="goCheckin(${r})"><i class="ti ti-login"></i> Check-in</button><button class="btn btn-maint" onclick="setMaintenance(${r})"><i class="ti ti-tool"></i></button>`;
-  else if(d.status==='occupied'||d.status==='checkout')actions=`<button class="btn btn-checkout" onclick="openCheckoutModal(${r})"><i class="ti ti-logout"></i> Checkout</button><button class="btn btn-invoice" onclick="openInvoiceForRoom(${r})"><i class="ti ti-receipt"></i> Bill</button>`;
-  else if(d.status==='checkout-clearing')actions=`<button class="btn btn-checkin" onclick="setAvailable(${r})"><i class="ti ti-check"></i> Mark Ready</button>`;
-  else if(d.status==='maintenance')actions=`<button class="btn btn-checkin" onclick="setAvailable(${r})"><i class="ti ti-check"></i> Mark Ready</button>`;
+  const isAdmin=currentRole==='admin';
+  if(d.status==='available')actions=isAdmin?`<button class="btn btn-checkin" onclick="goCheckin(${r})"><i class="ti ti-login"></i> Check-in</button><button class="btn btn-maint" onclick="setMaintenance(${r})"><i class="ti ti-tool"></i></button>`:`<span style="font-size:11px;color:var(--rm-muted)">View Only</span>`;
+  else if(d.status==='occupied'||d.status==='checkout')actions=isAdmin?`<button class="btn btn-checkout" onclick="openCheckoutModal(${r})"><i class="ti ti-logout"></i> Checkout</button><button class="btn btn-invoice" onclick="openInvoiceForRoom(${r})"><i class="ti ti-receipt"></i> Bill</button>`:`<button class="btn btn-invoice" onclick="openInvoiceForRoom(${r})"><i class="ti ti-receipt"></i> Bill</button>`;
+  else if(d.status==='checkout-clearing')actions=isAdmin?`<button class="btn btn-checkin" onclick="setAvailable(${r})"><i class="ti ti-check"></i> Mark Ready</button>`:`<span style="font-size:11px;color:var(--rm-muted)">Cleaning…</span>`;
+  else if(d.status==='maintenance')actions=isAdmin?`<button class="btn btn-checkin" onclick="setAvailable(${r})"><i class="ti ti-check"></i> Mark Ready</button>`:`<span style="font-size:11px;color:var(--rm-muted)">Maintenance</span>`;
   const info=d.customer?`<div class="room-info"><div class="name">${d.customer}</div><div><i class="ti ti-phone" style="font-size:11px"></i> ${d.mobile}</div><div><i class="ti ti-currency-rupee" style="font-size:11px"></i> ₹${d.price?.toLocaleString('en-IN')}</div><div><i class="ti ti-calendar" style="font-size:11px"></i> ${d.checkin?fmtDT(d.checkin):''}</div></div>`:`<div class="room-info" style="color:var(--rm-muted)">Room is ${statusLabel(d.status).toLowerCase()}</div>`;
   return`<div class="room-card ${d.status}"><div class="room-header"><span class="room-num"><i class="ti ti-door"></i> ${r}</span><span class="status-dot ${d.status}"></span></div><div class="room-status ${d.status}">${statusLabel(d.status)}</div>${info}<div class="room-actions">${actions}</div></div>`;
 }
@@ -639,7 +715,7 @@ function openCheckoutModal(r){
       <div class="summary-row"><span>Check-out</span><span>${fmtDT(new Date().toISOString())}</span></div>
       <div class="summary-row"><span>Total Bill</span><span>₹${d.price?.toLocaleString('en-IN')}</span></div>
     </div>
-    <div class="form-group"><label class="form-label">Payment Mode</label><select class="form-input" id="co-pay"><option>Cash</option><option>UPI</option><option>Card</option><option>Net Banking</option></select></div>
+    <div class="form-group"><label class="form-label">Payment Mode</label><select class="form-input" id="co-pay"><option>Cash</option><option>UPI</option><option>PhonePe</option><option>Google Pay</option><option>Card</option><option>Net Banking</option></select></div>
     <div class="form-group"><label class="form-label">Remarks</label><input class="form-input" id="co-note" placeholder="Optional remarks..."></div>
     <button class="btn btn-invoice" style="width:100%;margin-bottom:8px" onclick="openInvoiceForRoom(${r})"><i class="ti ti-receipt"></i> Generate Bill / Print Invoice</button>
     <button class="btn btn-primary" style="width:100%;margin-top:4px;background:var(--rm-yellow);color:#111" onclick="doCheckout(${r})"><i class="ti ti-logout"></i> Confirm Checkout</button>
@@ -650,6 +726,7 @@ function openCheckoutModal(r){
 function closeOverlay(id){document.getElementById(id).classList.remove('show');}
 
 function doCheckin(){
+  if(currentRole!=='admin'){showToast('Sirf Admin check-in kar sakta hai','red');return;}
   const name=document.getElementById('ci-name').value.trim(),mob=document.getElementById('ci-mobile').value.trim();
   const idp=document.getElementById('ci-id').value.trim(),room=parseInt(document.getElementById('ci-room').value);
   const price=parseInt(document.getElementById('ci-price').value)||0,dt=document.getElementById('ci-datetime').value||new Date().toISOString().slice(0,16);
@@ -707,9 +784,10 @@ function renderHistoryTable(){
   const rows=bookings.filter(b=>f==='all'||(f==='active'&&(b.status==='active'||b.status==='checkout-pending'))||(f==='checked-out'&&b.status==='checked-out'));
   document.getElementById('histTbody').innerHTML=rows.map(b=>{
     const i=bookings.indexOf(b);
-    const pmColor=(!b.paymentMode||b.paymentMode==='Cash')?'var(--rm-green)':b.paymentMode==='UPI'?'var(--rm-blue)':b.paymentMode==='Card'?'var(--rm-accent2)':'var(--rm-accent3)';
-    const pmBg=(!b.paymentMode||b.paymentMode==='Cash')?'rgba(63,166,108,.12)':b.paymentMode==='UPI'?'rgba(111,179,224,.2)':b.paymentMode==='Card'?'rgba(240,199,94,.2)':'rgba(63,166,108,.12)';
-    return`<tr><td><b>${b.room}</b></td><td>${b.customer}</td><td>${b.mobile}</td><td>${fmtDT(b.checkin)}</td><td>${b.checkout?fmtDT(b.checkout):'—'}</td><td>₹${b.price.toLocaleString('en-IN')}</td><td><span style="font-size:11px;padding:2px 8px;border-radius:20px;background:${pmBg};color:${pmColor}">${b.paymentMode||'Cash'}</span></td><td><span class="badge ${b.status==='checked-out'?'badge-green':'badge-red'}">${b.status==='active'?'Active':b.status==='checkout-pending'?'Pending':'Checked Out'}</span></td><td><button class="btn btn-invoice" onclick="openInvoiceForBooking(${i})"><i class="ti ti-receipt"></i> Bill</button></td></tr>`;
+    const pmColor=(!b.paymentMode||b.paymentMode==='Cash')?'var(--rm-green)':b.paymentMode==='UPI'?'var(--rm-blue)':b.paymentMode==='PhonePe'?'#6e1ec8':b.paymentMode==='Google Pay'?'#1a73e8':b.paymentMode==='Card'?'var(--rm-accent2)':'var(--rm-accent3)';
+    const pmBg=(!b.paymentMode||b.paymentMode==='Cash')?'rgba(63,166,108,.12)':b.paymentMode==='UPI'?'rgba(111,179,224,.2)':b.paymentMode==='PhonePe'?'rgba(110,30,200,.12)':b.paymentMode==='Google Pay'?'rgba(26,115,232,.12)':b.paymentMode==='Card'?'rgba(240,199,94,.2)':'rgba(63,166,108,.12)';
+    const delBtn=currentRole==='admin'?`<button class="btn" style="background:rgba(220,38,38,.1);color:var(--rm-red);margin-left:4px" onclick="promptDeleteBooking(${i})" title="Delete"><i class="ti ti-trash"></i></button>`:'';
+    return`<tr><td><b>${b.room}</b></td><td>${b.customer}</td><td>${b.mobile}</td><td>${fmtDT(b.checkin)}</td><td>${b.checkout?fmtDT(b.checkout):'—'}</td><td>₹${b.price.toLocaleString('en-IN')}</td><td><span style="font-size:11px;padding:2px 8px;border-radius:20px;background:${pmBg};color:${pmColor}">${b.paymentMode||'Cash'}</span></td><td><span class="badge ${b.status==='checked-out'?'badge-green':'badge-red'}">${b.status==='active'?'Active':b.status==='checkout-pending'?'Pending':'Checked Out'}</span></td><td style="display:flex;gap:2px"><button class="btn btn-invoice" onclick="openInvoiceForBooking(${i})"><i class="ti ti-receipt"></i> Bill</button>${delBtn}</td></tr>`;
   }).join('');
 }
 
@@ -741,6 +819,8 @@ function renderRevStats(){
   const pend=filteredBookings.filter(b=>b.status==='active').reduce((s,b)=>s+b.price,0);
   const cash=filteredBookings.filter(b=>b.status==='checked-out'&&(!b.paymentMode||b.paymentMode==='Cash')).reduce((s,b)=>s+b.price,0);
   const upi=filteredBookings.filter(b=>b.status==='checked-out'&&b.paymentMode==='UPI').reduce((s,b)=>s+b.price,0);
+  const phonepe=filteredBookings.filter(b=>b.status==='checked-out'&&b.paymentMode==='PhonePe').reduce((s,b)=>s+b.price,0);
+  const gpay=filteredBookings.filter(b=>b.status==='checked-out'&&b.paymentMode==='Google Pay').reduce((s,b)=>s+b.price,0);
   const card=filteredBookings.filter(b=>b.status==='checked-out'&&b.paymentMode==='Card').reduce((s,b)=>s+b.price,0);
   const netbank=filteredBookings.filter(b=>b.status==='checked-out'&&b.paymentMode==='Net Banking').reduce((s,b)=>s+b.price,0);
 
@@ -751,9 +831,11 @@ function renderRevStats(){
     <div class="stat-card" style="border-top:3px solid var(--rm-accent)"><div class="stat-label"><i class="ti ti-report-money"></i> Total Revenue</div><div class="stat-val accent">₹${all.toLocaleString('en-IN')}</div></div>
     <div class="stat-card" style="border-top:3px solid var(--rm-green)"><div class="stat-label"><i class="ti ti-cash"></i> Cash</div><div class="stat-val green">₹${cash.toLocaleString('en-IN')}</div></div>
     <div class="stat-card" style="border-top:3px solid var(--rm-blue)"><div class="stat-label"><i class="ti ti-qrcode"></i> UPI / Online</div><div class="stat-val" style="color:var(--rm-blue)">₹${upi.toLocaleString('en-IN')}</div></div>
-    <div class="stat-card" style="border-top:3px solid var(--rm-accent2)"><div class="stat-label"><i class="ti ti-credit-card"></i> Card</div><div class="stat-val accent2">₹${card.toLocaleString('en-IN')}</div></div>
+    <div class="stat-card" style="border-top:3px solid #6e1ec8"><div class="stat-label"><i class="ti ti-device-mobile"></i> PhonePe</div><div class="stat-val" style="color:#6e1ec8">₹${phonepe.toLocaleString('en-IN')}</div></div>
   `;
   if(document.getElementById('revStats2'))document.getElementById('revStats2').innerHTML=`
+    <div class="stat-card" style="border-top:3px solid #1a73e8"><div class="stat-label"><i class="ti ti-brand-google"></i> Google Pay</div><div class="stat-val" style="color:#1a73e8">₹${gpay.toLocaleString('en-IN')}</div></div>
+    <div class="stat-card" style="border-top:3px solid var(--rm-accent2)"><div class="stat-label"><i class="ti ti-credit-card"></i> Card</div><div class="stat-val accent2">₹${card.toLocaleString('en-IN')}</div></div>
     <div class="stat-card" style="border-top:3px solid var(--rm-accent3)"><div class="stat-label"><i class="ti ti-building-bank"></i> Net Banking</div><div class="stat-val accent3">₹${netbank.toLocaleString('en-IN')}</div></div>
     <div class="stat-card" style="border-top:3px solid var(--rm-yellow)"><div class="stat-label"><i class="ti ti-clock"></i> Pending</div><div class="stat-val yellow">₹${pend.toLocaleString('en-IN')}</div></div>
     <div class="stat-card" style="border-top:3px solid var(--rm-red)"><div class="stat-label"><i class="ti ti-receipt-2"></i> Total Expenses</div><div class="stat-val red">₹${totalExp.toLocaleString('en-IN')}</div></div>
@@ -763,16 +845,25 @@ function renderRevStats(){
 }
 
 function addExpense(){
-  const date=document.getElementById('exp-date').value;
-  const cat=document.getElementById('exp-category').value;
-  const amount=parseFloat(document.getElementById('exp-amount').value)||0;
-  const note=document.getElementById('exp-note').value.trim();
-  if(!date||!amount){showToast('Date aur Amount required hai','red');return;}
+  if(currentRole!=='admin'){showToast('Sirf Admin expense add kar sakta hai','red');return;}
+  const dateEl=document.getElementById('exp-date');
+  const amtEl=document.getElementById('exp-amount');
+  const catEl=document.getElementById('exp-category');
+  const noteEl=document.getElementById('exp-note');
+  const date=dateEl?dateEl.value.trim():'';
+  const amtRaw=amtEl?amtEl.value.trim():'';
+  const amount=parseFloat(amtRaw);
+  const cat=catEl?catEl.value:'Miscellaneous';
+  const note=noteEl?noteEl.value.trim():'';
+  if(!date){showToast('Date select karo','red');return;}
+  if(!amtRaw||isNaN(amount)||amount<=0){showToast('Valid amount enter karo (0 se zyada)','red');return;}
   expenses.push({id:Date.now(),date,category:cat,amount,note});
-  document.getElementById('exp-amount').value='';
-  document.getElementById('exp-note').value='';
-  saveData();renderExpenses();renderRevStats();
-  showToast(`Expense added: ₹${amount.toLocaleString('en-IN')}`);
+  if(amtEl)amtEl.value='';
+  if(noteEl)noteEl.value='';
+  saveData();
+  renderExpenses();
+  renderRevStats();
+  showToast(`Expense add ho gaya: Rs.${amount.toLocaleString('en-IN')} - ${cat}`);
 }
 
 function deleteExpense(id){
@@ -793,19 +884,27 @@ function renderExpenses(){
   const todayRev=bookings.filter(b=>b.status==='checked-out'&&b.checkout&&(filter==='today'?b.checkout.startsWith(today):filter==='thismonth'?b.checkout.startsWith(thisMonth):true)).reduce((s,b)=>s+b.price,0);
   const net=todayRev-totalExp;
 
-  if(document.getElementById('expStats'))
-    document.getElementById('expStats').innerHTML=`
-      <div class="stat-card" style="border-top:3px solid var(--rm-green)"><div class="stat-label"><i class="ti ti-report-money"></i> Revenue</div><div class="stat-val green">₹${todayRev.toLocaleString('en-IN')}</div></div>
-      <div class="stat-card" style="border-top:3px solid var(--rm-red)"><div class="stat-label"><i class="ti ti-receipt-2"></i> Expenses</div><div class="stat-val red">₹${totalExp.toLocaleString('en-IN')}</div></div>
-      <div class="stat-card" style="border-top:3px solid var(--rm-accent3)"><div class="stat-label"><i class="ti ti-trending-up"></i> Net</div><div class="stat-val ${net>=0?'green':'red'}">₹${net.toLocaleString('en-IN')}</div></div>
-    `;
+  const statsHTML=`
+    <div class="stat-card" style="border-top:3px solid var(--rm-green)"><div class="stat-label"><i class="ti ti-report-money"></i> Revenue</div><div class="stat-val green">₹${todayRev.toLocaleString('en-IN')}</div></div>
+    <div class="stat-card" style="border-top:3px solid var(--rm-red)"><div class="stat-label"><i class="ti ti-receipt-2"></i> Expenses</div><div class="stat-val red">₹${totalExp.toLocaleString('en-IN')}</div></div>
+    <div class="stat-card" style="border-top:3px solid var(--rm-accent3)"><div class="stat-label"><i class="ti ti-trending-up"></i> Net</div><div class="stat-val ${net>=0?'green':'red'}">₹${net.toLocaleString('en-IN')}</div></div>
+  `;
+  if(document.getElementById('expStats'))document.getElementById('expStats').innerHTML=statsHTML;
+  if(document.getElementById('expStatsView'))document.getElementById('expStatsView').innerHTML=statsHTML;
 
-  if(document.getElementById('expTbody'))
-    document.getElementById('expTbody').innerHTML=filtered.length?filtered.slice().reverse().map(e=>`<tr>
-      <td>${e.date}</td><td>${e.category}</td><td style="color:var(--rm-red);font-weight:500">₹${e.amount.toLocaleString('en-IN')}</td>
-      <td style="color:var(--rm-muted)">${e.note||'—'}</td>
-      <td><button class="btn" style="background:rgba(220,38,38,.1);color:var(--rm-red)" onclick="deleteExpense(${e.id})"><i class="ti ti-trash"></i></button></td>
-    </tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--rm-muted);padding:20px">Koi expense nahi mila</td></tr>';
+  const adminRows=filtered.length?filtered.slice().reverse().map(e=>`<tr>
+    <td>${e.date}</td><td>${e.category}</td><td style="color:var(--rm-red);font-weight:500">₹${e.amount.toLocaleString('en-IN')}</td>
+    <td style="color:var(--rm-muted)">${e.note||'—'}</td>
+    <td><button class="btn" style="background:rgba(220,38,38,.1);color:var(--rm-red)" onclick="deleteExpense(${e.id})"><i class="ti ti-trash"></i></button></td>
+  </tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--rm-muted);padding:20px">Koi expense nahi mila</td></tr>';
+
+  const viewRows=filtered.length?filtered.slice().reverse().map(e=>`<tr>
+    <td>${e.date}</td><td>${e.category}</td><td style="color:var(--rm-red);font-weight:500">₹${e.amount.toLocaleString('en-IN')}</td>
+    <td style="color:var(--rm-muted)">${e.note||'—'}</td>
+  </tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--rm-muted);padding:20px">Koi expense nahi mila</td></tr>';
+
+  if(document.getElementById('expTbody'))document.getElementById('expTbody').innerHTML=adminRows;
+  if(document.getElementById('expTbodyView'))document.getElementById('expTbodyView').innerHTML=viewRows;
 }
 
 function downloadBookingHistoryCSV(){
@@ -880,7 +979,9 @@ function showSection(name,el){
   document.getElementById('sec-'+name).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   if(el)el.classList.add('active');
-  const titles={dashboard:'Dashboard & Room Layout',checkin:'Quick Check-in',guests:'Booking History',revenue:'Revenue & Payments',expenses:'Expenses'};
+  const titles={dashboard:'Dashboard & Room Layout',checkin:'Quick Check-in',guests:'Booking History',revenue:'Revenue & Payments',expenses:'Expenses',settings:'Settings — Password Management'};
+  document.getElementById('topbarTitle').textContent=titles[name]||name;
+  if(name==='settings'&&currentRole!=='admin'){showToast('Settings sirf Admin ke liye hai','red');showSection('dashboard',document.querySelectorAll('.nav-item')[0]);return;}
   document.getElementById('topbarTitle').textContent=titles[name]||name;
   if(name==='checkin'){const now=new Date();now.setMinutes(now.getMinutes()-now.getTimezoneOffset());document.getElementById('ci-datetime').value=now.toISOString().slice(0,16);populateRoomSelect();}
   if(name==='guests'){renderCustomerTable();renderHistoryTable();}
@@ -1196,18 +1297,125 @@ function openInvoiceForCustomer(mob){
 
 function updateClock(){document.getElementById('clockEl').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short'})+' '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});}
 
-// ── Login ──────────────────────────────────────────────────
+// ── Password Store (localStorage persisted) ──────────────────
+function getPwd(key,def){return localStorage.getItem('hpwd_'+key)||def;}
+function setPwd(key,val){localStorage.setItem('hpwd_'+key,val);}
+
+// ── Role & Login ──────────────────────────────────────────────
+let currentRole=null; // 'admin' | 'viewer'
+let pendingDeleteIndex=null;
+
 function doLogin(){
   const u=document.getElementById('loginUser').value.trim().toUpperCase();
   const p=document.getElementById('loginPass').value;
-  if(u==='HOTEL PEACOCK'&&p==='peacock835'){
-    document.getElementById('loginPage').style.display='none';
-    document.getElementById('hms').style.display='flex';
-    initRooms();renderAll();updateClock();setInterval(updateClock,30000);listenFirebase();
+  const adminPwd=getPwd('admin','peacock835');
+  const viewPwd=getPwd('view','hotel835');
+  if(u==='HOTEL PEACOCK'&&p===adminPwd){
+    currentRole='admin';
+    launchApp();
+  }else if(u==='HOTEL PEACOCK'&&p===viewPwd){
+    currentRole='viewer';
+    launchApp();
   }else{
     const err=document.getElementById('loginErr');err.style.display='block';
     document.getElementById('loginPass').value='';
     setTimeout(()=>err.style.display='none',3500);
+  }
+}
+
+function launchApp(){
+  document.getElementById('loginPage').style.display='none';
+  document.getElementById('hms').style.display='flex';
+  applyRoleUI();
+  initRooms();renderAll();updateClock();setInterval(updateClock,30000);listenFirebase();
+}
+
+function applyRoleUI(){
+  const isAdmin=currentRole==='admin';
+  // Role tag
+  document.getElementById('roleTag').textContent=isAdmin?'👑 Admin':'👁 View Only';
+  document.getElementById('roleTag').style.background=isAdmin?'rgba(212,160,23,.12)':'rgba(111,179,224,.2)';
+  document.getElementById('roleTag').style.color=isAdmin?'var(--rm-accent)':'#2c6ea3';
+  // Settings nav only for admin
+  document.getElementById('settingsNavBtn').style.display=isAdmin?'':'none';
+  // Expenses: admin sees add panel, viewer sees read-only panel
+  document.getElementById('expAddPanel').style.display=isAdmin?'grid':'none';
+  document.getElementById('expViewPanel').style.display=isAdmin?'none':'block';
+}
+
+function doLogout(){
+  currentRole=null;
+  document.getElementById('hms').style.display='none';
+  document.getElementById('loginPage').style.display='flex';
+  document.getElementById('loginPass').value='';
+  document.getElementById('loginUser').value='HOTEL PEACOCK';
+}
+
+// ── View-only guard ───────────────────────────────────────────
+function adminOnly(fn){
+  if(currentRole!=='admin'){showToast('Yeh action sirf Admin ke liye hai','red');return;}
+  fn();
+}
+
+// ── Delete booking (password protected) ──────────────────────
+function promptDeleteBooking(i){
+  if(currentRole!=='admin'){showToast('Sirf Admin delete kar sakta hai','red');return;}
+  pendingDeleteIndex=i;
+  document.getElementById('deletePassInput').value='';
+  document.getElementById('deletePassErr').style.display='none';
+  document.getElementById('deletePassOverlay').classList.add('show');
+  setTimeout(()=>document.getElementById('deletePassInput').focus(),100);
+}
+
+function confirmDeleteBooking(){
+  const p=document.getElementById('deletePassInput').value;
+  const delPwd=getPwd('delete','admin835');
+  if(p!==delPwd){
+    document.getElementById('deletePassErr').style.display='block';
+    document.getElementById('deletePassInput').value='';
+    return;
+  }
+  if(pendingDeleteIndex!==null){
+    bookings.splice(pendingDeleteIndex,1);
+    saveData();renderHistoryTable();renderRevStats();renderStats();
+    showToast('Booking delete ho gayi');
+  }
+  closeOverlay('deletePassOverlay');
+  pendingDeleteIndex=null;
+}
+
+// ── Password Change ───────────────────────────────────────────
+function changePassword(type){
+  if(type==='admin'){
+    const old=document.getElementById('chg-old-admin').value;
+    const nw=document.getElementById('chg-new-admin').value;
+    const cf=document.getElementById('chg-confirm-admin').value;
+    if(old!==getPwd('admin','peacock835')){showToast('Current password galat hai','red');return;}
+    if(!nw||nw.length<4){showToast('Naya password kam se kam 4 characters ka hona chahiye','red');return;}
+    if(nw!==cf){showToast('Passwords match nahi karte','red');return;}
+    setPwd('admin',nw);
+    document.getElementById('chg-old-admin').value='';document.getElementById('chg-new-admin').value='';document.getElementById('chg-confirm-admin').value='';
+    showToast('Admin password update ho gaya!');
+  }else if(type==='view'){
+    const old=document.getElementById('chg-old-view').value;
+    const nw=document.getElementById('chg-new-view').value;
+    const cf=document.getElementById('chg-confirm-view').value;
+    if(old!==getPwd('admin','peacock835')){showToast('Admin password galat hai','red');return;}
+    if(!nw||nw.length<4){showToast('Naya password kam se kam 4 characters ka hona chahiye','red');return;}
+    if(nw!==cf){showToast('Passwords match nahi karte','red');return;}
+    setPwd('view',nw);
+    document.getElementById('chg-old-view').value='';document.getElementById('chg-new-view').value='';document.getElementById('chg-confirm-view').value='';
+    showToast('View password update ho gaya!');
+  }else if(type==='delete'){
+    const old=document.getElementById('chg-old-del').value;
+    const nw=document.getElementById('chg-new-del').value;
+    const cf=document.getElementById('chg-confirm-del').value;
+    if(old!==getPwd('admin','peacock835')){showToast('Admin password galat hai','red');return;}
+    if(!nw||nw.length<4){showToast('Naya password kam se kam 4 characters ka hona chahiye','red');return;}
+    if(nw!==cf){showToast('Passwords match nahi karte','red');return;}
+    setPwd('delete',nw);
+    document.getElementById('chg-old-del').value='';document.getElementById('chg-new-del').value='';document.getElementById('chg-confirm-del').value='';
+    showToast('Delete password update ho gaya!');
   }
 }
 
