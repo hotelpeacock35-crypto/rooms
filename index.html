@@ -250,6 +250,7 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
     <button class="nav-item" onclick="showSection('guests',this)"><i class="ti ti-history"></i> Booking History</button>
     <button class="nav-item" onclick="showSection('revenue',this)"><i class="ti ti-report-money"></i> Revenue</button>
     <button class="nav-item" onclick="showSection('expenses',this)"><i class="ti ti-receipt-2"></i> Expenses</button>
+    <button class="nav-item" id="transferNavBtn" onclick="showSection('transfers',this)" style="display:none"><i class="ti ti-arrows-exchange"></i> Room Transfers</button>
     <button class="nav-item" id="settingsNavBtn" onclick="showSection('settings',this)" style="display:none"><i class="ti ti-settings"></i> Settings</button>
   </div>
   <div style="padding:10px 8px;border-top:1px solid var(--rm-border)">
@@ -525,10 +526,30 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
       </div>
     </div>
 
+    <div class="section-view" id="sec-transfers">
+      <div class="section-header">
+        <div class="section-title"><i class="ti ti-arrows-exchange"></i> Room Transfer History</div>
+        <div class="filter-row">
+          <select class="filter-select" id="transferFilter" onchange="renderTransferTable()">
+            <option value="all">All Time</option>
+            <option value="today">Today</option>
+            <option value="thismonth">This Month</option>
+          </select>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="history-table" id="transferHistTable">
+          <thead><tr>
+            <th>Transfer Date</th><th>Customer</th><th>From Room</th><th>To Room</th>
+            <th>Old Price/night</th><th>New Price/night</th><th>Note</th><th id="transferActionHead">Action</th>
+          </tr></thead>
+          <tbody id="transferTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
   </div>
 </div>
-
-<div class="overlay" id="checkoutOverlay">
   <div class="modal" id="checkoutModal"></div>
 </div>
 
@@ -538,6 +559,14 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
 
 <div class="overlay" id="billFormOverlay">
   <div class="modal" id="billFormModal" style="width:560px;max-width:95vw"></div>
+</div>
+
+<!-- ── Room Transfer Overlay ── -->
+<div class="overlay" id="transferOverlay">
+  <div class="modal" style="width:460px;max-width:95vw">
+    <div class="modal-title"><i class="ti ti-arrows-exchange" style="color:var(--rm-accent)"></i> &nbsp;Room Transfer<button class="modal-close" onclick="closeOverlay('transferOverlay')"><i class="ti ti-x"></i></button></div>
+    <div id="transferModalContent"></div>
+  </div>
 </div>
 
 <div class="overlay" id="deletePassOverlay">
@@ -559,6 +588,7 @@ let roomData={};
 let bookings=[];
 let customers={};
 let expenses=[];
+let transfers=[];
 
 // ── Firebase Setup (Hotel Peacock Anand) ──────────────────
 const firebaseConfig={
@@ -582,8 +612,9 @@ function saveData(){
     localStorage.setItem('hms_bookings',JSON.stringify(bookings));
     localStorage.setItem('hms_customers',JSON.stringify(customers));
     localStorage.setItem('hms_expenses',JSON.stringify(expenses));
+    localStorage.setItem('hms_transfers',JSON.stringify(transfers));
   }catch(e){console.warn('Local save failed',e);}
-  hotelRef.set({roomData,bookings,customers,expenses}).catch(e=>{
+  hotelRef.set({roomData,bookings,customers,expenses,transfers}).catch(e=>{
     console.warn('Firebase save failed',e);
     showToast('Cloud sync failed — check internet / Firebase rules','red');
   });
@@ -596,10 +627,12 @@ function loadLocalCache(){
     const bk=localStorage.getItem('hms_bookings');
     const cu=localStorage.getItem('hms_customers');
     const ex=localStorage.getItem('hms_expenses');
+    const tr=localStorage.getItem('hms_transfers');
     if(rd)roomData=JSON.parse(rd);
     if(bk)bookings=JSON.parse(bk);
     if(cu)customers=JSON.parse(cu);
     if(ex)expenses=JSON.parse(ex);
+    if(tr)transfers=JSON.parse(tr);
   }catch(e){console.warn('Local cache load failed',e);}
 }
 
@@ -626,6 +659,7 @@ function listenFirebase(){
       bookings=val.bookings||[];
       customers=val.customers||{};
       expenses=val.expenses||[];
+      transfers=val.transfers||[];
     }
     ROOMS.forEach(r=>{if(!roomData[r])roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};});
     if(!firstSnapshotReceived){
@@ -639,6 +673,7 @@ function listenFirebase(){
       localStorage.setItem('hms_bookings',JSON.stringify(bookings));
       localStorage.setItem('hms_customers',JSON.stringify(customers));
       localStorage.setItem('hms_expenses',JSON.stringify(expenses));
+      localStorage.setItem('hms_transfers',JSON.stringify(transfers));
     }catch(e){}
   },err=>{
     console.warn('Firebase connection error',err);
@@ -689,7 +724,7 @@ function roomCardHTML(r,d){
   let actions='';
   const isAdmin=currentRole==='admin';
   if(d.status==='available')actions=isAdmin?`<button class="btn btn-checkin" onclick="goCheckin(${r})"><i class="ti ti-login"></i> Check-in</button><button class="btn btn-maint" onclick="setMaintenance(${r})"><i class="ti ti-tool"></i></button>`:`<span style="font-size:11px;color:var(--rm-muted)">View Only</span>`;
-  else if(d.status==='occupied'||d.status==='checkout')actions=isAdmin?`<button class="btn btn-checkout" onclick="openCheckoutModal(${r})"><i class="ti ti-logout"></i> Checkout</button><button class="btn" style="background:rgba(63,166,108,.12);color:var(--rm-green)" onclick="openAddPaymentModal(${r})"><i class="ti ti-wallet"></i> Pay</button><button class="btn btn-invoice" onclick="openInvoiceForRoom(${r})"><i class="ti ti-receipt"></i> Bill</button>`:`<button class="btn btn-invoice" onclick="openInvoiceForRoom(${r})"><i class="ti ti-receipt"></i> Bill</button>`;
+  else if(d.status==='occupied'||d.status==='checkout')actions=isAdmin?`<button class="btn btn-checkout" onclick="openCheckoutModal(${r})"><i class="ti ti-logout"></i> Checkout</button><button class="btn" style="background:rgba(212,160,23,.12);color:var(--rm-accent)" onclick="openTransferModal(${r})"><i class="ti ti-arrows-exchange"></i> Transfer</button><button class="btn" style="background:rgba(63,166,108,.12);color:var(--rm-green)" onclick="openAddPaymentModal(${r})"><i class="ti ti-wallet"></i> Pay</button><button class="btn btn-invoice" onclick="openInvoiceForRoom(${r})"><i class="ti ti-receipt"></i> Bill</button>`:`<button class="btn btn-invoice" onclick="openInvoiceForRoom(${r})"><i class="ti ti-receipt"></i> Bill</button>`;
   else if(d.status==='checkout-clearing')actions=isAdmin?`<button class="btn btn-checkin" onclick="setAvailable(${r})" style="background:rgba(63,166,108,.15);color:var(--rm-green);font-weight:600"><i class="ti ti-door-exit"></i> Release Room</button>`:`<span style="font-size:11px;color:var(--rm-muted)">Cleaning…</span>`;
   else if(d.status==='maintenance')actions=isAdmin?`<button class="btn btn-checkin" onclick="setAvailable(${r})"><i class="ti ti-check"></i> Mark Ready</button>`:`<span style="font-size:11px;color:var(--rm-muted)">Maintenance</span>`;
   const info=d.customer?`<div class="room-info"><div class="name">${d.customer}</div><div><i class="ti ti-phone" style="font-size:11px"></i> ${d.mobile}</div><div><i class="ti ti-currency-rupee" style="font-size:11px"></i> ₹${d.price?.toLocaleString('en-IN')}</div><div><i class="ti ti-calendar" style="font-size:11px"></i> ${d.checkin?fmtDT(d.checkin):''}</div></div>`:`<div class="room-info" style="color:var(--rm-muted)">Room is ${statusLabel(d.status).toLowerCase()}</div>`;
@@ -705,7 +740,7 @@ function renderRooms(g2,g3){
 function renderAll(){
   renderStats();
   renderRooms('floor2Grid','floor3Grid');
-  renderRevStats();renderHistoryTable();renderCustomerTable();populateRoomSelect();renderCharts();renderExpenses();
+  renderRevStats();renderHistoryTable();renderCustomerTable();populateRoomSelect();renderCharts();renderExpenses();renderTransferTable();
 }
 
 function populateRoomSelect(){
@@ -737,9 +772,29 @@ function openCheckoutModal(r){
       <div class="summary-row"><span>Customer</span><span>${d.customer}</span></div>
       <div class="summary-row"><span>Mobile</span><span>${d.mobile}</span></div>
       <div class="summary-row"><span>Check-in</span><span>${fmtDT(d.checkin)}</span></div>
-      <div class="summary-row"><span>Check-out</span><span>${fmtDT(new Date().toISOString())}</span></div>
-      <div class="summary-row"><span>Total Bill</span><span>₹${(d.price||0).toLocaleString('en-IN')}</span></div>
-      ${paidSoFar>0?`<div class="summary-row"><span>Already Paid</span><span style="color:var(--rm-green)">₹${paidSoFar.toLocaleString('en-IN')}</span></div><div class="summary-row"><span><b>Remaining</b></span><span style="color:var(--rm-red);font-weight:600">₹${remaining.toLocaleString('en-IN')}</span></div>`:''}
+      <div class="summary-row" style="align-items:center">
+        <span>Check-out Date & Time</span>
+        <span><input type="datetime-local" id="co-checkout-dt" class="form-input" style="font-size:11px;padding:4px 8px;width:auto" value="${(()=>{const d2=new Date();d2.setMinutes(d2.getMinutes()-d2.getTimezoneOffset());return d2.toISOString().slice(0,16);})()}" oninput="recalcCheckoutBill(${r})"></span>
+      </div>
+      <div class="summary-row"><span>Days (calculated)</span><span id="co-days-display" style="font-weight:600;color:var(--rm-accent)">—</span></div>
+      <div class="summary-row"><span>Room Tariff / night</span><span>₹${(d.price||0).toLocaleString('en-IN')}</span></div>
+    </div>
+    <div style="background:var(--rm-card);border:1px solid var(--rm-border);border-radius:10px;padding:12px;margin-bottom:12px">
+      <div style="font-size:12px;font-weight:500;color:var(--rm-accent);margin-bottom:10px"><i class="ti ti-calculator"></i> Bill Calculation</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div><label class="form-label">Early Charge (₹)</label><input class="form-input" id="co-early-charge" type="number" min="0" value="0" oninput="recalcCheckoutBill(${r})" placeholder="0"></div>
+        <div><label class="form-label">Extra Charge (₹)</label><input class="form-input" id="co-extra-charge" type="number" min="0" value="0" oninput="recalcCheckoutBill(${r})" placeholder="0"></div>
+      </div>
+      <div style="background:rgba(212,160,23,.06);border:1px solid rgba(212,160,23,.2);border-radius:8px;padding:10px;font-size:12px" id="co-bill-breakdown">
+        <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed var(--rm-border)"><span>Room Charges (<span id="co-bd-days">0</span> day × ₹${(d.price||0).toLocaleString('en-IN')})</span><span id="co-bd-room">₹0</span></div>
+        <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed var(--rm-border)"><span>Early Charge</span><span id="co-bd-early">₹0</span></div>
+        <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed var(--rm-border)"><span>Extra Charge</span><span id="co-bd-extra">₹0</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;font-weight:600;font-size:13px;color:var(--rm-accent)"><span>TOTAL BILL</span><span id="co-bd-total">₹0</span></div>
+      </div>
+    </div>
+    <div id="co-paid-summary" style="${paidSoFar>0?'':'display:none'}">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--rm-green)">Already Paid</span><span style="color:var(--rm-green);font-weight:600">₹${paidSoFar.toLocaleString('en-IN')}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:12px"><span style="color:var(--rm-red)"><b>Remaining</b></span><span id="co-remaining-amt" style="color:var(--rm-red);font-weight:600">₹${remaining.toLocaleString('en-IN')}</span></div>
     </div>
     ${existPays.length>0?`<div style="background:rgba(63,166,108,.06);border:1px solid rgba(63,166,108,.2);border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px"><div style="font-weight:500;color:var(--rm-green);margin-bottom:6px"><i class="ti ti-check"></i> Pehle ki payments</div>${existPays.map(p=>`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed rgba(0,0,0,.06)"><span>${p.mode}</span><span style="color:var(--rm-green);font-weight:500">₹${p.amount.toLocaleString('en-IN')}</span></div>`).join('')}</div>`:''}
     <div style="font-size:12px;font-weight:500;color:var(--rm-accent);margin-bottom:8px"><i class="ti ti-wallet"></i> Is baar ki payment (split bhi kar sakte ho)</div>
@@ -756,6 +811,8 @@ function openCheckoutModal(r){
   document.getElementById('checkoutOverlay').classList.add('show');
   updatePaySummary();
   window._coRoom=r;
+  // Auto calculate on open
+  setTimeout(()=>recalcCheckoutBill(r),50);
 }
 
 let _payRowCount=1;
@@ -779,7 +836,8 @@ function updatePaySummary(){
   let nowTotal=0;
   document.querySelectorAll('[id^="co-pay-amt-"]').forEach(el=>{nowTotal+=parseFloat(el.value)||0;});
   const totalPaid=existPaid+nowTotal;
-  const bal=(d.price||0)-totalPaid;
+  const billTotal=window._coGrandTotal!==undefined?window._coGrandTotal:(d.price||0);
+  const bal=billTotal-totalPaid;
   const sumEl=document.getElementById('pay-summary');
   if(sumEl){
     sumEl.style.display=nowTotal>0?'block':'none';
@@ -790,7 +848,44 @@ function updatePaySummary(){
   }
 }
 
+function recalcCheckoutBill(r){
+  const d=roomData[r];
+  const tariffPerNight=d.price||0;
+  const ciStr=d.checkin;
+  const coEl=document.getElementById('co-checkout-dt');
+  const coStr=coEl?coEl.value:null;
+  const ci=ciStr?new Date(ciStr):new Date();
+  const co=coStr?new Date(coStr):new Date();
+  const diffMs=co-ci;
+  const days=Math.max(1,Math.round(diffMs/(1000*60*60*24)));
+  const earlyCharge=parseFloat(document.getElementById('co-early-charge')?.value)||0;
+  const extraCharge=parseFloat(document.getElementById('co-extra-charge')?.value)||0;
+  const roomTotal=tariffPerNight*days;
+  const grandTotal=roomTotal+earlyCharge+extraCharge;
+  // Update breakdown display
+  const bdDays=document.getElementById('co-bd-days');
+  const bdRoom=document.getElementById('co-bd-room');
+  const bdEarly=document.getElementById('co-bd-early');
+  const bdExtra=document.getElementById('co-bd-extra');
+  const bdTotal=document.getElementById('co-bd-total');
+  const daysDisp=document.getElementById('co-days-display');
+  if(bdDays)bdDays.textContent=days;
+  if(bdRoom)bdRoom.textContent='₹'+roomTotal.toLocaleString('en-IN');
+  if(bdEarly)bdEarly.textContent='₹'+earlyCharge.toLocaleString('en-IN');
+  if(bdExtra)bdExtra.textContent='₹'+extraCharge.toLocaleString('en-IN');
+  if(bdTotal)bdTotal.textContent='₹'+grandTotal.toLocaleString('en-IN');
+  if(daysDisp)daysDisp.textContent=days+' day'+(days>1?'s':'');
+  // Update remaining
+  const existPaid=(d.payments||[]).reduce((s,p)=>s+p.amount,0);
+  const remEl=document.getElementById('co-remaining-amt');
+  if(remEl)remEl.textContent='₹'+Math.max(0,grandTotal-existPaid).toLocaleString('en-IN');
+  window._coGrandTotal=grandTotal;
+  window._coDays=days;
+  updatePaySummary();
+}
+
 function closeOverlay(id){document.getElementById(id).classList.remove('show');}
+
 
 function doCheckin(){
   if(currentRole!=='admin'){showToast('Sirf Admin check-in kar sakta hai','red');return;}
@@ -816,7 +911,12 @@ function doCheckin(){
 }
 
 function doCheckout(r){
-  const d=roomData[r],coTime=new Date().toISOString().slice(0,16);
+  const d=roomData[r];
+  const coEl=document.getElementById('co-checkout-dt');
+  const coTime=coEl&&coEl.value?new Date(coEl.value).toISOString().slice(0,16):(new Date().toISOString().slice(0,16));
+  const earlyCharge=parseFloat(document.getElementById('co-early-charge')?.value)||0;
+  const extraCharge=parseFloat(document.getElementById('co-extra-charge')?.value)||0;
+  const grandTotal=window._coGrandTotal!==undefined?window._coGrandTotal:(d.price||0);
   // Collect all payment rows
   const newPays=[];
   document.querySelectorAll('[id^="co-pay-mode-"]').forEach(sel=>{
@@ -829,10 +929,11 @@ function doCheckout(r){
   // paymentMode for legacy compat = first mode or combined
   const primaryMode=allPays.length===1?allPays[0].mode:allPays.length>1?allPays.map(p=>p.mode).join(' + '):'Cash';
   const b=bookings.find(x=>x.room===r&&(x.status==='active'||x.status==='checkout-pending'));
-  if(b){b.checkout=coTime;b.status='checked-out';b.paymentMode=primaryMode;b.payments=allPays;b.totalPaid=totalPaid;}
+  if(b){b.checkout=coTime;b.status='checked-out';b.paymentMode=primaryMode;b.payments=allPays;b.totalPaid=totalPaid;b.price=grandTotal;b.earlyCharge=earlyCharge;b.extraCharge=extraCharge;}
   if(customers[d.mobile]){const cb=customers[d.mobile].bookings.find(x=>x.room===r);if(cb)cb.status='checked-out';}
   // Seedha checkout-clearing (yellow phase hata diya) — staff manually Release karega
   roomData[r]={status:'checkout-clearing',customer:null,mobile:null,price:null,checkin:null,id:null,_clearTime:Date.now()};
+  window._coGrandTotal=undefined;window._coDays=undefined;
   saveData();closeOverlay('checkoutOverlay');renderAll();showToast(`Room ${r} checkout complete — Release karo jab ready ho`);
 }
 
@@ -1157,9 +1258,10 @@ function showSection(name,el){
   document.getElementById('sec-'+name).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   if(el)el.classList.add('active');
-  const titles={dashboard:'Dashboard & Room Layout',checkin:'Quick Check-in',guests:'Booking History',revenue:'Revenue & Payments',expenses:'Expenses',settings:'Settings — Password Management'};
+  const titles={dashboard:'Dashboard & Room Layout',checkin:'Quick Check-in',guests:'Booking History',revenue:'Revenue & Payments',expenses:'Expenses',settings:'Settings — Password Management',transfers:'Room Transfer History'};
   document.getElementById('topbarTitle').textContent=titles[name]||name;
   if(name==='settings'&&currentRole!=='admin'){showToast('Settings sirf Admin ke liye hai','red');showSection('dashboard',document.querySelectorAll('.nav-item')[0]);return;}
+  if(name==='transfers'&&currentRole!=='admin'){showToast('Transfer history sirf Admin ke liye hai','red');showSection('dashboard',document.querySelectorAll('.nav-item')[0]);return;}
   document.getElementById('topbarTitle').textContent=titles[name]||name;
   if(name==='checkin'){const now=new Date();now.setMinutes(now.getMinutes()-now.getTimezoneOffset());document.getElementById('ci-datetime').value=now.toISOString().slice(0,16);populateRoomSelect();}
   if(name==='guests'){renderCustomerTable();renderHistoryTable();}
@@ -1169,6 +1271,7 @@ function showSection(name,el){
     renderExpenses();
   }
   if(name==='revenue')renderRevStats();
+  if(name==='transfers')renderTransferTable();
   renderCharts();
 }
 
@@ -1266,22 +1369,35 @@ function openBillForm(b){
       <div class="form-group"><label class="form-label">Actual Tariff (₹/night)</label><input class="form-input" id="bf-actual-tariff" type="number" value="${defaultTariff}"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Arrival Date & Time</label><input class="form-input" id="bf-arrival" type="datetime-local" value="${arrival}"></div>
-      <div class="form-group"><label class="form-label">Dept. Date & Time</label><input class="form-input" id="bf-dept" type="datetime-local" value="${dept}"></div>
+      <div class="form-group"><label class="form-label">Arrival Date & Time</label><input class="form-input" id="bf-arrival" type="datetime-local" value="${arrival}" oninput="recalcBillForm()"></div>
+      <div class="form-group"><label class="form-label">Dept. Date & Time</label><input class="form-input" id="bf-dept" type="datetime-local" value="${dept}" oninput="recalcBillForm()"></div>
     </div>
 
     <div class="form-label" style="text-transform:uppercase;letter-spacing:.5px;color:var(--rm-accent);margin:10px 0 8px">Charges (₹)</div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Room Tariff / night</label><input class="form-input" id="bf-room-tariff" type="number" value="${defaultTariff}"></div>
-      <div class="form-group"><label class="form-label">Extra Guest Charge</label><input class="form-input" id="bf-exguest-charge" type="number" value="0"></div>
+      <div class="form-group"><label class="form-label">Room Tariff / night</label><input class="form-input" id="bf-room-tariff" type="number" value="${defaultTariff}" oninput="recalcBillForm()"></div>
+      <div class="form-group"><label class="form-label">Extra Guest Charge</label><input class="form-input" id="bf-exguest-charge" type="number" value="0" oninput="recalcBillForm()"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Room Service</label><input class="form-input" id="bf-roomservice" type="number" value="0"></div>
-      <div class="form-group"><label class="form-label">Restaurant</label><input class="form-input" id="bf-restaurant" type="number" value="0"></div>
+      <div class="form-group"><label class="form-label">Early Charge (₹)</label><input class="form-input" id="bf-early-charge" type="number" value="0" oninput="recalcBillForm()" placeholder="Early checkout charge"></div>
+      <div class="form-group"><label class="form-label">Extra Charge (₹)</label><input class="form-input" id="bf-extra-charge" type="number" value="0" oninput="recalcBillForm()" placeholder="Any other extra charge"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Laundry</label><input class="form-input" id="bf-laundry" type="number" value="0"></div>
-      <div class="form-group"><label class="form-label">Miscellaneous</label><input class="form-input" id="bf-misc" type="number" value="0"></div>
+      <div class="form-group"><label class="form-label">Room Service</label><input class="form-input" id="bf-roomservice" type="number" value="0" oninput="recalcBillForm()"></div>
+      <div class="form-group"><label class="form-label">Restaurant</label><input class="form-input" id="bf-restaurant" type="number" value="0" oninput="recalcBillForm()"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Laundry</label><input class="form-input" id="bf-laundry" type="number" value="0" oninput="recalcBillForm()"></div>
+      <div class="form-group"><label class="form-label">Miscellaneous</label><input class="form-input" id="bf-misc" type="number" value="0" oninput="recalcBillForm()"></div>
+    </div>
+    <div style="background:rgba(212,160,23,.07);border:1px solid rgba(212,160,23,.25);border-radius:9px;padding:12px;margin-bottom:10px;font-size:12px" id="bf-preview-box">
+      <div style="font-weight:600;color:var(--rm-accent);margin-bottom:8px"><i class="ti ti-calculator"></i> Bill Preview</div>
+      <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed #e1e4ea"><span>Room Charges (<span id="bf-pv-nights">${nights}</span> day × ₹${defaultTariff})</span><span id="bf-pv-room">₹${(defaultTariff*nights).toLocaleString('en-IN')}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed #e1e4ea"><span>Extra Guest</span><span id="bf-pv-exguest">₹0</span></div>
+      <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed #e1e4ea"><span>Early Charge</span><span id="bf-pv-early">₹0</span></div>
+      <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed #e1e4ea"><span>Extra Charge</span><span id="bf-pv-extra">₹0</span></div>
+      <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed #e1e4ea"><span>Room Service + Restaurant + Laundry + Misc</span><span id="bf-pv-services">₹0</span></div>
+      <div style="display:flex;justify-content:space-between;padding:5px 0;font-weight:700;font-size:13px;color:var(--rm-accent)"><span>TOTAL</span><span id="bf-pv-total">₹${(defaultTariff*nights).toLocaleString('en-IN')}</span></div>
     </div>
 
     <div class="form-label" style="text-transform:uppercase;letter-spacing:.5px;color:var(--rm-accent);margin:10px 0 8px">Tax & Adjustments</div>
@@ -1315,6 +1431,37 @@ function addDaysISO(dtStr,n){
 function fmtDateOnly(d){return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});}
 function rupee(n){return '₹'+Math.round(n).toLocaleString('en-IN');}
 
+function recalcBillForm(){
+  const tariff=parseFloat(document.getElementById('bf-room-tariff')?.value)||0;
+  const arrival=document.getElementById('bf-arrival')?.value;
+  const dept=document.getElementById('bf-dept')?.value;
+  const nights=Math.max(1,calcNights(arrival,dept));
+  const exguest=parseFloat(document.getElementById('bf-exguest-charge')?.value)||0;
+  const early=parseFloat(document.getElementById('bf-early-charge')?.value)||0;
+  const extra=parseFloat(document.getElementById('bf-extra-charge')?.value)||0;
+  const rs=parseFloat(document.getElementById('bf-roomservice')?.value)||0;
+  const rest=parseFloat(document.getElementById('bf-restaurant')?.value)||0;
+  const lau=parseFloat(document.getElementById('bf-laundry')?.value)||0;
+  const misc=parseFloat(document.getElementById('bf-misc')?.value)||0;
+  const services=rs+rest+lau+misc;
+  const roomTotal=tariff*nights;
+  const grandTotal=roomTotal+exguest+early+extra+services;
+  const pvNights=document.getElementById('bf-pv-nights');
+  const pvRoom=document.getElementById('bf-pv-room');
+  const pvExguest=document.getElementById('bf-pv-exguest');
+  const pvEarly=document.getElementById('bf-pv-early');
+  const pvExtra=document.getElementById('bf-pv-extra');
+  const pvServices=document.getElementById('bf-pv-services');
+  const pvTotal=document.getElementById('bf-pv-total');
+  if(pvNights)pvNights.textContent=nights;
+  if(pvRoom)pvRoom.textContent='₹'+roomTotal.toLocaleString('en-IN');
+  if(pvExguest)pvExguest.textContent='₹'+exguest.toLocaleString('en-IN');
+  if(pvEarly)pvEarly.textContent='₹'+early.toLocaleString('en-IN');
+  if(pvExtra)pvExtra.textContent='₹'+extra.toLocaleString('en-IN');
+  if(pvServices)pvServices.textContent='₹'+services.toLocaleString('en-IN');
+  if(pvTotal)pvTotal.textContent='₹'+grandTotal.toLocaleString('en-IN');
+}
+
 function generateBillFromForm(){
   const v=id=>document.getElementById(id).value;
   const name=v('bf-name').trim();
@@ -1332,6 +1479,8 @@ function generateBillFromForm(){
     gstin:v('bf-gstin'),hsn:v('bf-hsn'),
     roomTariff:parseFloat(v('bf-room-tariff'))||0,
     exGuestCharge:parseFloat(v('bf-exguest-charge'))||0,
+    earlyCharge:parseFloat(v('bf-early-charge'))||0,
+    extraCharge:parseFloat(v('bf-extra-charge'))||0,
     roomService:parseFloat(v('bf-roomservice'))||0,
     restaurant:parseFloat(v('bf-restaurant'))||0,
     laundry:parseFloat(v('bf-laundry'))||0,
@@ -1351,7 +1500,7 @@ function generateBillFromForm(){
 
 function renderTaxInvoice(data){
   let rows='';
-  let totRoom=0,totEx=0,totRS=0,totRest=0,totLau=0,totMisc=0,totSub=0;
+  let totRoom=0,totEx=0,totRS=0,totRest=0,totLau=0,totMisc=0,totEarly=0,totExtra=0,totSub=0;
   for(let i=0;i<data.nights;i++){
     const dt=addDaysISO(data.arrival,i);
     const ex=i===0?data.exGuestCharge:0;
@@ -1359,9 +1508,11 @@ function renderTaxInvoice(data){
     const rest=i===0?data.restaurant:0;
     const lau=i===0?data.laundry:0;
     const ms=i===0?data.misc:0;
-    const sub=data.roomTariff+ex+rs+rest+lau+ms;
-    totRoom+=data.roomTariff;totEx+=ex;totRS+=rs;totRest+=rest;totLau+=lau;totMisc+=ms;totSub+=sub;
-    rows+=`<tr><td>${fmtDateOnly(dt)}</td><td>${rupee(data.roomTariff)}</td><td>${ex?rupee(ex):'—'}</td><td>${rs?rupee(rs):'—'}</td><td>${rest?rupee(rest):'—'}</td><td>${lau?rupee(lau):'—'}</td><td>${ms?rupee(ms):'—'}</td><td>${rupee(sub)}</td></tr>`;
+    const early=i===0?(data.earlyCharge||0):0;
+    const extra=i===0?(data.extraCharge||0):0;
+    const sub=data.roomTariff+ex+rs+rest+lau+ms+early+extra;
+    totRoom+=data.roomTariff;totEx+=ex;totRS+=rs;totRest+=rest;totLau+=lau;totMisc+=ms;totEarly+=early;totExtra+=extra;totSub+=sub;
+    rows+=`<tr><td>${fmtDateOnly(dt)}</td><td>${rupee(data.roomTariff)}</td><td>${ex?rupee(ex):'—'}</td><td>${early?rupee(early):'—'}</td><td>${extra?rupee(extra):'—'}</td><td>${rs?rupee(rs):'—'}</td><td>${rest?rupee(rest):'—'}</td><td>${lau?rupee(lau):'—'}</td><td>${ms?rupee(ms):'—'}</td><td>${rupee(sub)}</td></tr>`;
   }
   const taxable=totSub;
   const sgstAmt=taxable*data.sgstPct/100;
@@ -1411,10 +1562,10 @@ function renderTaxInvoice(data){
 
         <div class="inv-table-wrap">
           <table class="inv-table">
-            <thead><tr><th><i class="ti ti-calendar-event"></i> Date</th><th>Room Tariff</th><th>Extra Guest</th><th><i class="ti ti-bed"></i> Room Service</th><th><i class="ti ti-tools-kitchen-2"></i> Rest.</th><th><i class="ti ti-wash"></i> Laundry</th><th><i class="ti ti-dots"></i> Misc.</th><th>Sub Total</th></tr></thead>
+            <thead><tr><th><i class="ti ti-calendar-event"></i> Date</th><th>Room Tariff</th><th>Extra Guest</th><th><i class="ti ti-clock-off"></i> Early Charge</th><th><i class="ti ti-plus"></i> Extra Charge</th><th><i class="ti ti-bed"></i> Room Service</th><th><i class="ti ti-tools-kitchen-2"></i> Rest.</th><th><i class="ti ti-wash"></i> Laundry</th><th><i class="ti ti-dots"></i> Misc.</th><th>Sub Total</th></tr></thead>
             <tbody>
               ${rows}
-              <tr class="inv-total-row"><td>TOTAL</td><td>${rupee(totRoom)}</td><td>${rupee(totEx)}</td><td>${rupee(totRS)}</td><td>${rupee(totRest)}</td><td>${rupee(totLau)}</td><td>${rupee(totMisc)}</td><td>${rupee(totSub)}</td></tr>
+              <tr class="inv-total-row"><td>TOTAL</td><td>${rupee(totRoom)}</td><td>${rupee(totEx)}</td><td>${totEarly?rupee(totEarly):'—'}</td><td>${totExtra?rupee(totExtra):'—'}</td><td>${rupee(totRS)}</td><td>${rupee(totRest)}</td><td>${rupee(totLau)}</td><td>${rupee(totMisc)}</td><td>${rupee(totSub)}</td></tr>
             </tbody>
           </table>
         </div>
@@ -1422,6 +1573,8 @@ function renderTaxInvoice(data){
         <div class="inv-bottom">
           <div class="inv-pill-wrap">
             <div class="inv-pill">AMOUNT SUMMARY</div>
+            ${totEarly>0?`<div class="inv-amt-row"><span>Early Charge</span><span>${rupee(totEarly)}</span></div>`:''}
+            ${totExtra>0?`<div class="inv-amt-row"><span>Extra Charge</span><span>${rupee(totExtra)}</span></div>`:''}
             <div class="inv-amt-row"><span>Add / Ded</span><span>${rupee(data.addDed)}</span></div>
             <div class="inv-amt-row"><span>Amount C/F</span><span>${rupee(data.cf)}</span></div>
             <div class="inv-amt-row"><span>Final Amount</span><span>${rupee(finalAmt)}</span></div>
@@ -1483,6 +1636,7 @@ function setPwd(key,val){localStorage.setItem('hpwd_'+key,val);}
 let currentRole=null; // 'admin' | 'viewer'
 let pendingDeleteIndex=null;
 let pendingDeleteExpId=null;
+let pendingDeleteTransferId=null;
 
 function doLogin(){
   const u=document.getElementById('loginUser').value.trim().toUpperCase();
@@ -1515,8 +1669,12 @@ function applyRoleUI(){
   document.getElementById('roleTag').textContent=isAdmin?'👑 Admin':'👁 View Only';
   document.getElementById('roleTag').style.background=isAdmin?'rgba(212,160,23,.12)':'rgba(111,179,224,.2)';
   document.getElementById('roleTag').style.color=isAdmin?'var(--rm-accent)':'#2c6ea3';
-  // Settings nav only for admin
+  // Settings & Transfer nav only for admin
   document.getElementById('settingsNavBtn').style.display=isAdmin?'':'none';
+  document.getElementById('transferNavBtn').style.display=isAdmin?'':'none';
+  // Transfer action column header
+  const th=document.getElementById('transferActionHead');
+  if(th)th.style.display=isAdmin?'':'none';
   // Expenses: admin sees add panel, viewer sees read-only panel
   document.getElementById('expAddPanel').style.display=isAdmin?'grid':'none';
   document.getElementById('expViewPanel').style.display=isAdmin?'none':'block';
@@ -1584,9 +1742,230 @@ function confirmDelete(){
   pendingDeleteExpId=null;
 }
 
+function confirmDelete(){
+  const p=document.getElementById('deletePassInput').value;
+  const delPwd=getPwd('delete','admin835');
+  if(p!==delPwd){
+    document.getElementById('deletePassErr').style.display='block';
+    document.getElementById('deletePassInput').value='';
+    return;
+  }
+  if(pendingDeleteIndex!==null){
+    bookings.splice(pendingDeleteIndex,1);
+    saveData();renderHistoryTable();renderRevStats();renderStats();
+    showToast('Booking delete ho gayi');
+  }else if(pendingDeleteExpId!==null){
+    expenses=expenses.filter(e=>e.id!==pendingDeleteExpId);
+    saveData();renderExpenses();renderRevStats();
+    showToast('Expense delete ho gaya');
+  }else if(pendingDeleteTransferId!==null){
+    transfers=transfers.filter(t=>t.id!==pendingDeleteTransferId);
+    saveData();renderTransferTable();
+    showToast('Transfer record delete ho gaya');
+  }
+  closeOverlay('deletePassOverlay');
+  pendingDeleteIndex=null;
+  pendingDeleteExpId=null;
+  pendingDeleteTransferId=null;
+}
+
 function confirmDeleteBooking(){confirmDelete();}
 
-// ── Clear ALL Data (bookings, rooms, customers, expenses) ─────
+// ── Room Transfer Functions ────────────────────────────────────
+const ROOM_TYPES={
+  201:'3 Bed',202:'3 Bed',203:'3 Bed',204:'3 Bed',205:'3 Bed',206:'3 Bed',207:'2 Bed',
+  301:'3 Bed',302:'3 Bed',303:'3 Bed',304:'3 Bed',305:'3 Bed',306:'3 Bed',307:'3 Bed',308:'2 Bed'
+};
+
+function openTransferModal(r){
+  if(currentRole!=='admin'){showToast('Sirf Admin room transfer kar sakta hai','red');return;}
+  const d=roomData[r];
+  if(!d||!d.customer){showToast('Is room mein koi guest nahi hai','red');return;}
+  // Available rooms list (same room bhi allow — price change ke liye)
+  const availableRooms=ROOMS.filter(x=>x===r||roomData[x].status==='available');
+  const POPTS=`<option value="Cash">Cash</option><option value="UPI">UPI</option><option value="PhonePe">PhonePe</option><option value="Google Pay">Google Pay</option><option value="Card">Card</option><option value="Net Banking">Net Banking</option>`;
+  const roomOptions=availableRooms.map(x=>{
+    const label=x===r?`Room ${x} (Same Room — price change only)`:`Room ${x} (${ROOM_TYPES[x]||''})`;
+    return`<option value="${x}" ${x===r?'':''}>${label}</option>`;
+  }).join('');
+  const now=(()=>{const d2=new Date();d2.setMinutes(d2.getMinutes()-d2.getTimezoneOffset());return d2.toISOString().slice(0,16);})();
+  document.getElementById('transferModalContent').innerHTML=`
+    <div class="summary-box" style="margin-bottom:14px">
+      <div class="summary-row"><span>Current Guest</span><span style="font-weight:600">${d.customer}</span></div>
+      <div class="summary-row"><span>Current Room</span><span><b>Room ${r}</b> (${ROOM_TYPES[r]||''})</span></div>
+      <div class="summary-row"><span>Check-in</span><span>${fmtDT(d.checkin)}</span></div>
+      <div class="summary-row"><span>Current Price/night</span><span style="color:var(--rm-accent);font-weight:600">₹${(d.price||0).toLocaleString('en-IN')}</span></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Transfer To Room *</label>
+      <select class="form-input" id="tr-toRoom" onchange="onTransferRoomChange(${r})">
+        ${roomOptions}
+      </select>
+    </div>
+    <div id="tr-same-notice" style="display:none;background:rgba(212,160,23,.08);border:1px solid rgba(212,160,23,.25);border-radius:8px;padding:8px 12px;font-size:12px;margin-bottom:10px;color:var(--rm-accent)">
+      <i class="ti ti-info-circle"></i> Same room selected — sirf booking price update hogi, room change nahi hoga.
+    </div>
+    <div class="form-group">
+      <label class="form-label">New Booking Price/night (₹) *</label>
+      <input class="form-input" id="tr-newPrice" type="number" placeholder="New price per night" value="${d.price||0}">
+      <div style="font-size:10px;color:var(--rm-muted);margin-top:3px">Old price: ₹${(d.price||0).toLocaleString('en-IN')} — naya price alag ho sakta hai</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Transfer Date & Time</label>
+      <input class="form-input" id="tr-datetime" type="datetime-local" value="${now}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Note (optional)</label>
+      <input class="form-input" id="tr-note" placeholder="e.g. Guest requested bigger room">
+    </div>
+    <div style="background:rgba(63,166,108,.06);border:1px solid rgba(63,166,108,.2);border-radius:8px;padding:10px;margin-bottom:14px;font-size:12px" id="tr-preview">
+      <div style="font-weight:500;color:var(--rm-green);margin-bottom:6px"><i class="ti ti-arrows-exchange"></i> Transfer Preview</div>
+      <div id="tr-preview-text" style="color:var(--rm-muted)">Room select karo aur price set karo…</div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,var(--rm-accent),var(--rm-accent3))" onclick="doRoomTransfer(${r})">
+      <i class="ti ti-arrows-exchange"></i> Confirm Transfer
+    </button>
+  `;
+  document.getElementById('transferOverlay').classList.add('show');
+  onTransferRoomChange(r);
+  // Live preview on price input
+  document.getElementById('tr-newPrice').addEventListener('input',()=>updateTransferPreview(r));
+}
+
+function onTransferRoomChange(fromRoom){
+  const toRoom=parseInt(document.getElementById('tr-toRoom')?.value||'0');
+  const notice=document.getElementById('tr-same-notice');
+  if(notice)notice.style.display=toRoom===fromRoom?'block':'none';
+  updateTransferPreview(fromRoom);
+}
+
+function updateTransferPreview(fromRoom){
+  const d=roomData[fromRoom];
+  const toRoom=parseInt(document.getElementById('tr-toRoom')?.value||'0');
+  const newPrice=parseFloat(document.getElementById('tr-newPrice')?.value)||0;
+  const oldPrice=d.price||0;
+  const el=document.getElementById('tr-preview-text');
+  if(!el)return;
+  if(toRoom===fromRoom){
+    el.innerHTML=`Room <b>${fromRoom}</b> mein hi rahega &nbsp;|&nbsp; Price: <span style="color:var(--rm-red)">₹${oldPrice.toLocaleString('en-IN')}</span> → <span style="color:var(--rm-green)">₹${newPrice.toLocaleString('en-IN')}</span>/night`;
+  }else{
+    el.innerHTML=`Room <b>${fromRoom}</b> → Room <b>${toRoom}</b> &nbsp;|&nbsp; Price: <span style="color:var(--rm-red)">₹${oldPrice.toLocaleString('en-IN')}</span> → <span style="color:var(--rm-green)">₹${newPrice.toLocaleString('en-IN')}</span>/night`;
+  }
+}
+
+function doRoomTransfer(fromRoom){
+  if(currentRole!=='admin'){showToast('Sirf Admin transfer kar sakta hai','red');return;}
+  const d=roomData[fromRoom];
+  const toRoom=parseInt(document.getElementById('tr-toRoom')?.value||'0');
+  const newPrice=parseFloat(document.getElementById('tr-newPrice')?.value)||0;
+  const dt=document.getElementById('tr-datetime')?.value||new Date().toISOString().slice(0,16);
+  const note=document.getElementById('tr-note')?.value.trim()||'';
+  if(!toRoom){showToast('Room select karo','red');return;}
+  if(!newPrice||newPrice<=0){showToast('Valid price enter karo','red');return;}
+  const oldPrice=d.price||0;
+  const isSameRoom=toRoom===fromRoom;
+  // Build transfer record
+  const transferRecord={
+    id:Date.now(),
+    fromRoom,toRoom,
+    customer:d.customer,mobile:d.mobile,
+    oldPrice,newPrice,
+    transferDate:dt,
+    note,
+    isSameRoom
+  };
+  transfers.push(transferRecord);
+  // Update active booking — split into two entries (old segment + new segment)
+  const activeBooking=bookings.find(b=>b.room===fromRoom&&b.status==='active');
+  if(activeBooking){
+    // Close old segment
+    activeBooking.status='transferred';
+    activeBooking.checkout=dt;
+    activeBooking.transferredTo=toRoom;
+    // New booking segment
+    const newBooking={
+      room:toRoom,
+      customer:d.customer,
+      mobile:d.mobile,
+      price:newPrice,
+      checkin:dt,
+      checkout:null,
+      status:'active',
+      id:d.id,
+      payments:[...(d.payments||[])],
+      totalPaid:(d.totalPaid||0),
+      transferredFrom:fromRoom
+    };
+    bookings.push(newBooking);
+  }
+  if(!isSameRoom){
+    // Free old room
+    roomData[fromRoom]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};
+    // Occupy new room
+    roomData[toRoom]={
+      status:'occupied',
+      customer:d.customer,
+      mobile:d.mobile,
+      price:newPrice,
+      checkin:dt,
+      id:d.id,
+      payments:d.payments||[],
+      totalPaid:d.totalPaid||0
+    };
+    showToast(`✅ Room ${fromRoom} → Room ${toRoom} transfer complete! New price: ₹${newPrice.toLocaleString('en-IN')}/night`);
+  }else{
+    // Same room — just update price
+    roomData[fromRoom].price=newPrice;
+    showToast(`✅ Room ${fromRoom} — price update ho gaya: ₹${oldPrice.toLocaleString('en-IN')} → ₹${newPrice.toLocaleString('en-IN')}/night`);
+  }
+  saveData();closeOverlay('transferOverlay');renderAll();
+}
+
+function renderTransferTable(){
+  const filter=document.getElementById('transferFilter')?.value||'all';
+  const today=new Date().toISOString().split('T')[0];
+  const thisMonth=today.slice(0,7);
+  let rows=transfers;
+  if(filter==='today')rows=transfers.filter(t=>t.transferDate&&t.transferDate.startsWith(today));
+  else if(filter==='thismonth')rows=transfers.filter(t=>t.transferDate&&t.transferDate.startsWith(thisMonth));
+  const isAdmin=currentRole==='admin';
+  const tbody=document.getElementById('transferTbody');
+  if(!tbody)return;
+  if(!rows.length){
+    tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;color:var(--rm-muted);padding:20px"><i class="ti ti-arrows-exchange"></i> Koi transfer record nahi mila</td></tr>`;
+    return;
+  }
+  tbody.innerHTML=rows.slice().reverse().map(t=>{
+    const isSame=t.isSameRoom||t.fromRoom===t.toRoom;
+    const delBtn=isAdmin?`<td><button class="btn" style="background:rgba(220,38,38,.1);color:var(--rm-red)" onclick="promptDeleteTransfer(${t.id})" title="Delete"><i class="ti ti-trash"></i></button></td>`:'<td></td>';
+    const diff=t.newPrice-t.oldPrice;
+    const diffColor=diff>0?'var(--rm-red)':diff<0?'var(--rm-green)':'var(--rm-muted)';
+    const diffStr=diff===0?'No change':(diff>0?'+':'')+`₹${diff.toLocaleString('en-IN')}`;
+    return`<tr>
+      <td style="font-size:11px">${fmtDT(t.transferDate)}</td>
+      <td><b>${t.customer}</b><div style="font-size:10px;color:var(--rm-muted)">${t.mobile}</div></td>
+      <td><span style="font-size:13px;font-weight:600">🚪${t.fromRoom}</span></td>
+      <td>${isSame?`<span style="color:var(--rm-muted);font-size:11px">Same room</span>`:`<span style="font-size:13px;font-weight:600">🚪${t.toRoom}</span>`}</td>
+      <td>₹${t.oldPrice.toLocaleString('en-IN')}</td>
+      <td>₹${t.newPrice.toLocaleString('en-IN')} <span style="font-size:10px;color:${diffColor}">(${diffStr})</span></td>
+      <td style="color:var(--rm-muted);font-size:11px">${t.note||'—'}</td>
+      ${delBtn}
+    </tr>`;
+  }).join('');
+}
+
+function promptDeleteTransfer(id){
+  if(currentRole!=='admin'){showToast('Sirf Admin delete kar sakta hai','red');return;}
+  pendingDeleteTransferId=id;
+  pendingDeleteIndex=null;
+  pendingDeleteExpId=null;
+  document.getElementById('deletePassDesc').textContent='Yeh transfer record permanently delete ho jaayega. Aage badhne ke liye delete password enter karo.';
+  document.getElementById('deletePassBtn').innerHTML='<i class="ti ti-trash"></i> Delete Transfer Record';
+  document.getElementById('deletePassInput').value='';
+  document.getElementById('deletePassErr').style.display='none';
+  document.getElementById('deletePassOverlay').classList.add('show');
+  setTimeout(()=>document.getElementById('deletePassInput').focus(),100);
+}
 function clearAllData(){
   if(currentRole!=='admin'){showToast('Sirf Admin yeh kar sakta hai','red');return;}
   const p=document.getElementById('clearAllPass')?.value||'';
@@ -1602,15 +1981,17 @@ function clearAllData(){
   bookings=[];
   customers={};
   expenses={};
+  transfers=[];
   ROOMS.forEach(r=>{roomData[r]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};});
   // Clear Firebase
-  hotelRef.set({roomData,bookings:[],customers:{},expenses:[]}).catch(e=>console.warn('Firebase clear failed',e));
+  hotelRef.set({roomData,bookings:[],customers:{},expenses:[],transfers:[]}).catch(e=>console.warn('Firebase clear failed',e));
   // Clear localStorage
   try{
     localStorage.removeItem('hms_roomData');
     localStorage.removeItem('hms_bookings');
     localStorage.removeItem('hms_customers');
     localStorage.removeItem('hms_expenses');
+    localStorage.removeItem('hms_transfers');
   }catch(e){}
   renderAll();
   showToast('✅ Saara data successfully delete ho gaya!');
