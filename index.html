@@ -762,26 +762,39 @@ function paymentRowHTML(idx){
   </div>`;
 }
 
-// ── Get all past transfer segments for a guest (by mobile, chain leading to room r) ──
+// ── Get all past transfer segments for a guest (chain leading to current room r) ──
 function getTransferSegments(r){
   const d=roomData[r];
   if(!d||!d.mobile)return[];
-  // Collect all 'transferred' bookings for this mobile, sorted by checkin
-  const allSegs=bookings.filter(b=>b.mobile===d.mobile&&b.status==='transferred').sort((a,b)=>new Date(a.checkin)-new Date(b.checkin));
-  // Only include segments that are part of THIS guest's current chain
-  // Walk backwards: current room booking's transferredFrom chain
   const activeBooking=bookings.find(b=>b.room===r&&b.mobile===d.mobile&&b.status==='active');
-  if(!activeBooking)return[];
+  if(!activeBooking||!activeBooking.transferredFrom)return[];
+
   const chain=[];
+  const visited=new Set();
   let cur=activeBooking;
-  // trace back through transferredFrom
-  while(cur&&cur.transferredFrom){
-    const prev=allSegs.find(b=>b.room===cur.transferredFrom&&b.mobile===d.mobile&&b.status==='transferred'&&!chain.includes(b));
+
+  // Walk backwards through chain, max 20 steps to prevent infinite loop
+  let steps=0;
+  while(cur&&cur.transferredFrom&&steps<20){
+    const key=cur.room+'_'+cur.checkin;
+    if(visited.has(key))break;
+    visited.add(key);
+    // Find the transferred segment that led to cur
+    const prev=bookings.find(b=>
+      b.mobile===d.mobile &&
+      b.status==='transferred' &&
+      b.transferredTo===cur.room &&
+      b.checkout===cur.checkin
+    );
     if(!prev)break;
+    const prevKey=prev.room+'_'+prev.checkin;
+    if(visited.has(prevKey))break;
+    visited.add(prevKey);
     chain.unshift(prev);
     cur=prev;
+    steps++;
   }
-  return chain; // oldest first
+  return chain; // oldest segment first
 }
 
 function openCheckoutModal(r){
@@ -1056,13 +1069,22 @@ function checkExisting(){
 
 function renderHistoryTable(){
   const f=document.getElementById('histFilter')?.value||'all';
-  const rows=bookings.filter(b=>f==='all'||(f==='active'&&(b.status==='active'||b.status==='checkout-pending'))||(f==='checked-out'&&b.status==='checked-out'));
+  // 'transferred' status entries hide karo — wo sirf transfer segments hain, actual booking nahi
+  const rows=bookings.filter(b=>{
+    if(b.status==='transferred')return false; // hide internal transfer segments
+    if(f==='all')return true;
+    if(f==='active')return b.status==='active'||b.status==='checkout-pending';
+    if(f==='checked-out')return b.status==='checked-out';
+    return true;
+  });
   document.getElementById('histTbody').innerHTML=rows.map(b=>{
     const i=bookings.indexOf(b);
     const pmColor=(!b.paymentMode||b.paymentMode==='Cash')?'var(--rm-green)':b.paymentMode==='UPI'?'var(--rm-blue)':b.paymentMode==='PhonePe'?'#6e1ec8':b.paymentMode==='Google Pay'?'#1a73e8':b.paymentMode==='Card'?'var(--rm-accent2)':'var(--rm-accent3)';
     const pmBg=(!b.paymentMode||b.paymentMode==='Cash')?'rgba(63,166,108,.12)':b.paymentMode==='UPI'?'rgba(111,179,224,.2)':b.paymentMode==='PhonePe'?'rgba(110,30,200,.12)':b.paymentMode==='Google Pay'?'rgba(26,115,232,.12)':b.paymentMode==='Card'?'rgba(240,199,94,.2)':'rgba(63,166,108,.12)';
     const delBtn=currentRole==='admin'?`<button class="btn" style="background:rgba(220,38,38,.1);color:var(--rm-red);margin-left:4px" onclick="promptDeleteBooking(${i})" title="Delete"><i class="ti ti-trash"></i></button>`:'';
-    return`<tr><td><b>${b.room}</b></td><td>${b.customer}</td><td>${b.mobile}</td><td>${fmtDT(b.checkin)}</td><td>${b.checkout?fmtDT(b.checkout):'—'}</td><td>₹${b.price.toLocaleString('en-IN')}</td><td><span style="font-size:11px;padding:2px 8px;border-radius:20px;background:${pmBg};color:${pmColor}">${b.paymentMode||'Cash'}</span></td><td><span class="badge ${b.status==='checked-out'?'badge-green':'badge-red'}">${b.status==='active'?'Active':b.status==='checkout-pending'?'Pending':'Checked Out'}</span></td><td style="display:flex;gap:2px"><button class="btn btn-invoice" onclick="openInvoiceForBooking(${i})"><i class="ti ti-receipt"></i> Bill</button>${delBtn}</td></tr>`;
+    // Transfer badge — agar ye booking transferred room se aayi hai
+    const transferBadge=b.transferredFrom?`<span style="font-size:9px;padding:1px 6px;border-radius:10px;background:rgba(212,160,23,.15);color:var(--rm-accent);margin-left:4px"><i class="ti ti-arrows-exchange"></i> from ${b.transferredFrom}</span>`:'';
+    return`<tr><td><b>${b.room}</b>${transferBadge}</td><td>${b.customer}</td><td>${b.mobile}</td><td>${fmtDT(b.checkin)}</td><td>${b.checkout?fmtDT(b.checkout):'—'}</td><td>₹${b.price.toLocaleString('en-IN')}</td><td><span style="font-size:11px;padding:2px 8px;border-radius:20px;background:${pmBg};color:${pmColor}">${b.paymentMode||'Cash'}</span></td><td><span class="badge ${b.status==='checked-out'?'badge-green':'badge-red'}">${b.status==='active'?'Active':b.status==='checkout-pending'?'Pending':'Checked Out'}</span></td><td style="display:flex;gap:2px"><button class="btn btn-invoice" onclick="openInvoiceForBooking(${i})"><i class="ti ti-receipt"></i> Bill</button>${delBtn}</td></tr>`;
   }).join('');
 }
 
@@ -1927,8 +1949,9 @@ function doRoomTransfer(fromRoom){
   if(!newPrice||newPrice<=0){showToast('Valid price enter karo','red');return;}
   const oldPrice=d.price||0;
   const isSameRoom=toRoom===fromRoom;
-  // Build transfer record
-  const transferRecord={
+
+  // Transfer record save karo
+  transfers.push({
     id:Date.now(),
     fromRoom,toRoom,
     customer:d.customer,mobile:d.mobile,
@@ -1936,35 +1959,59 @@ function doRoomTransfer(fromRoom){
     transferDate:dt,
     note,
     isSameRoom
-  };
-  transfers.push(transferRecord);
-  // Update active booking — split into two entries (old segment + new segment)
-  const activeBooking=bookings.find(b=>b.room===fromRoom&&b.status==='active');
-  if(activeBooking){
-    // Close old segment
-    activeBooking.status='transferred';
-    activeBooking.checkout=dt;
-    activeBooking.transferredTo=toRoom;
-    // New booking segment
-    const newBooking={
-      room:toRoom,
-      customer:d.customer,
-      mobile:d.mobile,
-      price:newPrice,
-      checkin:dt,
-      checkout:null,
-      status:'active',
-      id:d.id,
-      payments:[...(d.payments||[])],
-      totalPaid:(d.totalPaid||0),
-      transferredFrom:fromRoom
-    };
-    bookings.push(newBooking);
-  }
-  if(!isSameRoom){
-    // Free old room
+  });
+
+  if(isSameRoom){
+    // ── Same room: sirf price update, koi naya booking entry nahi ──
+    // Purani active booking ko internal price-change segment banao
+    const activeBooking=bookings.find(b=>b.room===fromRoom&&b.status==='active');
+    if(activeBooking){
+      // Purani booking ko 'transferred' mark karo (segment ke roop mein)
+      activeBooking.status='transferred';
+      activeBooking.checkout=dt;
+      activeBooking.transferredTo=fromRoom;
+      // Naya segment same room, new price, same transferredFrom chain maintain karo
+      bookings.push({
+        room:fromRoom,
+        customer:d.customer,
+        mobile:d.mobile,
+        price:newPrice,
+        checkin:dt,
+        checkout:null,
+        status:'active',
+        id:d.id,
+        payments:[...(d.payments||[])],
+        totalPaid:(d.totalPaid||0),
+        transferredFrom:fromRoom  // same room, price changed
+      });
+    }
+    // roomData mein sirf price update
+    roomData[fromRoom].price=newPrice;
+    showToast(`✅ Room ${fromRoom} — price update: ₹${oldPrice.toLocaleString('en-IN')} → ₹${newPrice.toLocaleString('en-IN')}/night`);
+
+  }else{
+    // ── Different room transfer ──
+    const activeBooking=bookings.find(b=>b.room===fromRoom&&b.status==='active');
+    if(activeBooking){
+      activeBooking.status='transferred';
+      activeBooking.checkout=dt;
+      activeBooking.transferredTo=toRoom;
+      bookings.push({
+        room:toRoom,
+        customer:d.customer,
+        mobile:d.mobile,
+        price:newPrice,
+        checkin:dt,
+        checkout:null,
+        status:'active',
+        id:d.id,
+        payments:[...(d.payments||[])],
+        totalPaid:(d.totalPaid||0),
+        transferredFrom:fromRoom
+      });
+    }
+    // Old room free, new room occupy
     roomData[fromRoom]={status:'available',customer:null,mobile:null,price:null,checkin:null,id:null};
-    // Occupy new room
     roomData[toRoom]={
       status:'occupied',
       customer:d.customer,
@@ -1975,11 +2022,7 @@ function doRoomTransfer(fromRoom){
       payments:d.payments||[],
       totalPaid:d.totalPaid||0
     };
-    showToast(`✅ Room ${fromRoom} → Room ${toRoom} transfer complete! New price: ₹${newPrice.toLocaleString('en-IN')}/night`);
-  }else{
-    // Same room — just update price
-    roomData[fromRoom].price=newPrice;
-    showToast(`✅ Room ${fromRoom} — price update ho gaya: ₹${oldPrice.toLocaleString('en-IN')} → ₹${newPrice.toLocaleString('en-IN')}/night`);
+    showToast(`✅ Room ${fromRoom} → Room ${toRoom} transfer! New price: ₹${newPrice.toLocaleString('en-IN')}/night`);
   }
   saveData();closeOverlay('transferOverlay');renderAll();
 }
