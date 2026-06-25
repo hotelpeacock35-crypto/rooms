@@ -225,8 +225,13 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
       <label>Password</label>
       <input type="password" id="loginPass" placeholder="Enter password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
-    <button class="login-btn" onclick="doLogin()"><i class="ti ti-login"></i> &nbsp;Sign In</button>
+    <button class="login-btn" id="loginBtn" onclick="doLogin()"><i class="ti ti-login"></i> &nbsp;Sign In</button>
+    <div id="fbStatus" style="text-align:center;font-size:11px;color:#767b88;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:6px">
+      <span id="fbDot" style="width:8px;height:8px;border-radius:50%;background:#d9a83a;display:inline-block;animation:pulse 1.2s infinite"></span>
+      <span id="fbStatusText">Firebase se connect ho raha hai...</span>
+    </div>
     <div class="login-err" id="loginErr">Incorrect username or password. Please try again.</div>
+    <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}</style>
   </div>
 </div>
 
@@ -246,11 +251,10 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
   </div>
   <div class="nav">
     <button class="nav-item active" onclick="showSection('dashboard',this)"><i class="ti ti-layout-dashboard"></i> Dashboard</button>
-    <button class="nav-item" onclick="showSection('checkin',this)"><i class="ti ti-login"></i> Check-in</button>
+    <button class="nav-item" onclick="showSection('expenses',this)"><i class="ti ti-receipt-2"></i> Expenses</button>
     <button class="nav-item" onclick="showSection('guests',this)"><i class="ti ti-history"></i> Booking History</button>
     <button class="nav-item" onclick="showSection('revenue',this)"><i class="ti ti-report-money"></i> Revenue</button>
-    <button class="nav-item" onclick="showSection('expenses',this)"><i class="ti ti-receipt-2"></i> Expenses</button>
-    <button class="nav-item" id="transferNavBtn" onclick="showSection('transfers',this)" style="display:none"><i class="ti ti-arrows-exchange"></i> Room Transfers</button>
+    <button class="nav-item" id="transferNavBtn" onclick="showSection('transfers',this)" style="display:none"><i class="ti ti-database-edit"></i> Data Change</button>
     <button class="nav-item" id="settingsNavBtn" onclick="showSection('settings',this)" style="display:none"><i class="ti ti-settings"></i> Settings</button>
   </div>
   <div style="padding:10px 8px;border-top:1px solid var(--rm-border)">
@@ -292,6 +296,11 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
           <div class="chart-canvas-wrap"><canvas id="dashRevenueChart"></canvas></div>
         </div>
       </div>
+      <div style="margin-top:18px;text-align:right">
+        <button id="dashClearAllBtn" class="btn" style="display:none;background:rgba(220,38,38,.1);color:var(--rm-red);padding:7px 14px" onclick="clearAllDataFromDashboard()">
+          <i class="ti ti-trash"></i> Clear All Data
+        </button>
+      </div>
     </div>
 
     <div class="section-view" id="sec-rooms" style="display:none!important"></div>
@@ -304,16 +313,11 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
             <label class="form-label">Customer Name *</label>
             <input class="form-input" id="ci-name" placeholder="Full name">
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Mobile Number *</label>
-              <input class="form-input" id="ci-mobile" placeholder="10-digit mobile" maxlength="10" oninput="checkExisting()">
-            </div>
-            <div class="form-group">
-              <label class="form-label">ID Proof</label>
-              <input class="form-input" id="ci-id" placeholder="Aadhar / PAN / Passport">
-            </div>
+          <div class="form-group">
+            <label class="form-label">Mobile Number *</label>
+            <input class="form-input" id="ci-mobile" placeholder="10-digit mobile" maxlength="10" oninput="checkExisting()">
           </div>
+          <input type="hidden" id="ci-id" value="">
           <div id="existingCustomerBox" style="display:none;background:rgba(212,160,23,.06);border:1px solid rgba(212,160,23,.25);border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px">
             <div style="color:var(--rm-accent);font-weight:500;margin-bottom:4px"><i class="ti ti-user-check"></i> Returning customer found</div>
             <div id="existingCustomerInfo"></div>
@@ -325,7 +329,7 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
             </div>
             <div class="form-group">
               <label class="form-label">Booking Price (₹) *</label>
-              <input class="form-input" id="ci-price" type="number" placeholder="1200">
+              <input class="form-input" id="ci-price" type="number" placeholder="1200" min="0" step="1" inputmode="numeric">
             </div>
           </div>
           <div class="form-group">
@@ -379,6 +383,75 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
           <button class="btn btn-primary" style="font-size:11px;padding:6px 14px" onclick="downloadBookingHistoryCSV()"><i class="ti ti-download"></i> Download CSV</button>
         </div>
       </div>
+
+      <!-- Direct Entry Panel (Admin only) -->
+      <div id="directEntryPanel" style="background:var(--rm-card);border:1.5px solid rgba(212,160,23,.35);border-radius:12px;padding:16px;margin-bottom:16px">
+        <div style="font-size:13px;font-weight:500;color:var(--rm-accent);margin-bottom:12px"><i class="ti ti-pencil-plus"></i> Direct Entry — Bina Check-in ke booking add karo</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;align-items:end">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Room No. *</label>
+            <select class="form-input" id="de-room">
+              <option value="">-- Room Select Karo --</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Customer Name *</label>
+            <input class="form-input" id="de-name" placeholder="Full name">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Mobile *</label>
+            <input class="form-input" id="de-mobile" placeholder="10-digit" maxlength="10">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Check-in Date</label>
+            <input class="form-input" id="de-checkin" type="datetime-local">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Check-out Date</label>
+            <input class="form-input" id="de-checkout" type="datetime-local">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Price/night (₹) *</label>
+            <input class="form-input" id="de-price" type="number" placeholder="0">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Payment Mode</label>
+            <select class="form-input" id="de-paymode">
+              <option value="">-- Koi nahi --</option>
+              <option value="Cash">Cash</option>
+              <option value="UPI">UPI</option>
+              <option value="PhonePe">PhonePe</option>
+              <option value="Google Pay">Google Pay</option>
+              <option value="Card">Card</option>
+              <option value="Net Banking">Net Banking</option>
+              <optgroup label="── Online Booking ──">
+                <option value="MakeMyTrip">MakeMyTrip (MMT)</option>
+                <option value="Agoda">Agoda</option>
+                <option value="Booking.com">Booking.com</option>
+                <option value="Cleartrip">Cleartrip</option>
+                <option value="Bravistay">Bravistay</option>
+                <option value="Hotel Zify">Hotel Zify</option>
+                <option value="Others">Others</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Amount Paid (₹)</label>
+            <input class="form-input" id="de-paid" type="number" placeholder="0">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Status</label>
+            <select class="form-input" id="de-status">
+              <option value="active">Active (Check-in)</option>
+              <option value="checked-out">Checked Out</option>
+            </select>
+          </div>
+          <div style="margin-bottom:0">
+            <button class="btn btn-primary" style="width:100%;padding:8px 10px" onclick="addDirectEntry()"><i class="ti ti-plus"></i> Add Entry</button>
+          </div>
+        </div>
+      </div>
+
       <div style="overflow-x:auto">
         <table class="history-table">
           <thead><tr>
@@ -398,16 +471,24 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
       <div style="max-width:480px;display:flex;flex-direction:column;gap:16px">
 
         <div style="background:var(--rm-card);border:1px solid var(--rm-border);border-radius:12px;padding:20px">
-          <div style="font-size:13px;font-weight:500;color:var(--rm-accent);margin-bottom:14px"><i class="ti ti-key"></i> Change Admin Password</div>
-          <div class="form-group"><label class="form-label">Current Admin Password</label><input class="form-input" id="chg-old-admin" type="password" placeholder="Current password"></div>
+          <div style="font-size:13px;font-weight:500;color:var(--rm-accent);margin-bottom:14px"><i class="ti ti-crown"></i> Change Owner Password</div>
+          <div class="form-group"><label class="form-label">Current Owner Password</label><input class="form-input" id="chg-old-owner" type="password" placeholder="Current password"></div>
+          <div class="form-group"><label class="form-label">New Password</label><input class="form-input" id="chg-new-owner" type="password" placeholder="New password"></div>
+          <div class="form-group"><label class="form-label">Confirm New Password</label><input class="form-input" id="chg-confirm-owner" type="password" placeholder="Confirm new password"></div>
+          <button class="btn btn-primary" style="width:100%" onclick="changePassword('owner')"><i class="ti ti-check"></i> Update Owner Password</button>
+        </div>
+
+        <div style="background:var(--rm-card);border:1px solid var(--rm-border);border-radius:12px;padding:20px">
+          <div style="font-size:13px;font-weight:500;color:#2c6ea3;margin-bottom:14px"><i class="ti ti-key"></i> Change Admin (Entry/Edit) Password</div>
+          <div class="form-group"><label class="form-label">Current Owner Password (required)</label><input class="form-input" id="chg-old-admin" type="password" placeholder="Owner password to authorize"></div>
           <div class="form-group"><label class="form-label">New Password</label><input class="form-input" id="chg-new-admin" type="password" placeholder="New password"></div>
           <div class="form-group"><label class="form-label">Confirm New Password</label><input class="form-input" id="chg-confirm-admin" type="password" placeholder="Confirm new password"></div>
-          <button class="btn btn-primary" style="width:100%" onclick="changePassword('admin')"><i class="ti ti-check"></i> Update Admin Password</button>
+          <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,#6fb3e0,#2c6ea3)" onclick="changePassword('admin')"><i class="ti ti-check"></i> Update Admin Password</button>
         </div>
 
         <div style="background:var(--rm-card);border:1px solid var(--rm-border);border-radius:12px;padding:20px">
           <div style="font-size:13px;font-weight:500;color:var(--rm-blue);margin-bottom:14px"><i class="ti ti-eye"></i> Change View-Only Password</div>
-          <div class="form-group"><label class="form-label">Current Admin Password (required)</label><input class="form-input" id="chg-old-view" type="password" placeholder="Admin password to authorize"></div>
+          <div class="form-group"><label class="form-label">Current Owner Password (required)</label><input class="form-input" id="chg-old-view" type="password" placeholder="Owner password to authorize"></div>
           <div class="form-group"><label class="form-label">New View-Only Password</label><input class="form-input" id="chg-new-view" type="password" placeholder="New view password"></div>
           <div class="form-group"><label class="form-label">Confirm New Password</label><input class="form-input" id="chg-confirm-view" type="password" placeholder="Confirm new password"></div>
           <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,#6fb3e0,#3fa66c)" onclick="changePassword('view')"><i class="ti ti-check"></i> Update View Password</button>
@@ -415,7 +496,7 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
 
         <div style="background:var(--rm-card);border:1px solid var(--rm-border);border-radius:12px;padding:20px">
           <div style="font-size:13px;font-weight:500;color:var(--rm-red);margin-bottom:14px"><i class="ti ti-shield-lock"></i> Change Delete Password</div>
-          <div class="form-group"><label class="form-label">Current Admin Password (required)</label><input class="form-input" id="chg-old-del" type="password" placeholder="Admin password to authorize"></div>
+          <div class="form-group"><label class="form-label">Current Owner Password (required)</label><input class="form-input" id="chg-old-del" type="password" placeholder="Owner password to authorize"></div>
           <div class="form-group"><label class="form-label">New Delete Password</label><input class="form-input" id="chg-new-del" type="password" placeholder="New delete password"></div>
           <div class="form-group"><label class="form-label">Confirm New Password</label><input class="form-input" id="chg-confirm-del" type="password" placeholder="Confirm new password"></div>
           <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,#dc2626,#d9a83a)" onclick="changePassword('delete')"><i class="ti ti-check"></i> Update Delete Password</button>
@@ -424,7 +505,7 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
         <div style="background:var(--rm-card);border:1.5px solid rgba(220,38,38,.35);border-radius:12px;padding:20px">
           <div style="font-size:13px;font-weight:500;color:var(--rm-red);margin-bottom:6px"><i class="ti ti-trash"></i> Saara Data Clear Karo</div>
           <div style="font-size:11px;color:var(--rm-muted);margin-bottom:14px">Yeh action saari bookings, room history, customers aur expenses permanently delete karega — Firebase aur local dono se. Wapas nahi ho sakta!</div>
-          <div class="form-group"><label class="form-label">Admin Password (confirm karne ke liye)</label><input class="form-input" id="clearAllPass" type="password" placeholder="Admin password daalo"></div>
+          <div class="form-group"><label class="form-label">Owner Password (confirm karne ke liye)</label><input class="form-input" id="clearAllPass" type="password" placeholder="Owner password daalo"></div>
           <div id="clearAllErr" style="display:none;font-size:11px;color:var(--rm-red);margin-bottom:8px"><i class="ti ti-alert-circle"></i> Galat password!</div>
           <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,#dc2626,#b91c1c)" onclick="clearAllData()"><i class="ti ti-trash"></i> Haan, Saara Data Delete Karo</button>
         </div>
@@ -436,11 +517,13 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
       <div class="section-header">
         <div class="section-title">Revenue Summary</div>
         <div class="filter-row">
-          <select class="filter-select" id="revMonthFilter" onchange="renderRevStats()">
+          <select class="filter-select" id="revMonthFilter" onchange="onRevFilterChange()">
             <option value="all">All Time</option>
             <option value="today">Today</option>
             <option value="thismonth">This Month</option>
+            <option value="pickmonth">Month Select...</option>
           </select>
+          <input type="month" class="filter-select" id="revMonthPicker" style="display:none;max-width:150px" onchange="renderRevStats()">
           <button class="btn btn-primary" style="font-size:11px;padding:6px 14px" onclick="downloadMonthlyReportCSV()"><i class="ti ti-download"></i> Monthly Report</button>
         </div>
       </div>
@@ -448,7 +531,7 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
       <div style="font-size:11px;font-weight:500;color:var(--rm-muted);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.6px"><i class="ti ti-credit-card"></i> Payment Mode Breakdown</div>
       <div class="stats-row" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr));margin-top:0" id="revStats2"></div>
       <div class="chart-card" style="max-width:760px;margin-top:16px">
-        <div class="section-title">Revenue by Room</div>
+        <div class="section-title" id="revChartTitle"><i class="ti ti-chart-bar"></i> Revenue by Month</div>
         <div style="position:relative;height:220px;width:100%"><canvas id="roomRevenueChart"></canvas></div>
       </div>
       <div style="margin-top:16px">
@@ -482,7 +565,7 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
           </div>
           <div class="form-group">
             <label class="form-label">Category *</label>
-            <select class="form-input" id="exp-category">
+            <select class="form-input" id="exp-category" onchange="toggleExpItem()">
               <option>Electricity</option>
               <option>Staff Salary</option>
               <option>Maintenance</option>
@@ -492,6 +575,10 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
               <option>Marketing</option>
               <option>Miscellaneous</option>
             </select>
+          </div>
+          <div class="form-group" id="exp-item-group" style="display:none">
+            <label class="form-label">Item Name *</label>
+            <input class="form-input" id="exp-item" placeholder="Item ka naam likho">
           </div>
           <div class="form-group">
             <label class="form-label">Amount (₹) *</label>
@@ -528,23 +615,71 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
 
     <div class="section-view" id="sec-transfers">
       <div class="section-header">
-        <div class="section-title"><i class="ti ti-arrows-exchange"></i> Room Transfer History</div>
-        <div class="filter-row">
+        <div class="section-title"><i class="ti ti-database-edit"></i> Data Change</div>
+      </div>
+      <!-- Sub-tabs -->
+      <div style="display:flex;gap:0;border-bottom:2px solid var(--rm-border);margin-bottom:16px">
+        <button id="dtab-transfers" onclick="switchDataTab('transfers')" style="padding:8px 18px;font-size:13px;font-weight:500;border:none;background:none;cursor:pointer;border-bottom:2px solid var(--rm-accent);color:var(--rm-accent);margin-bottom:-2px;font-family:inherit"><i class="ti ti-arrows-exchange"></i> Room Transfer History</button>
+        <button id="dtab-edithistory" onclick="switchDataTab('edithistory')" style="padding:8px 18px;font-size:13px;font-weight:500;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;color:var(--rm-muted);margin-bottom:-2px;font-family:inherit"><i class="ti ti-edit"></i> Edited Booking History</button>
+        <button id="dtab-expedithistory" onclick="switchDataTab('expedithistory')" style="padding:8px 18px;font-size:13px;font-weight:500;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;color:var(--rm-muted);margin-bottom:-2px;font-family:inherit"><i class="ti ti-receipt-2"></i> Edited Expense History</button>
+      </div>
+
+      <!-- Room Transfer History Panel -->
+      <div id="dtab-panel-transfers">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
           <select class="filter-select" id="transferFilter" onchange="renderTransferTable()">
             <option value="all">All Time</option>
             <option value="today">Today</option>
             <option value="thismonth">This Month</option>
           </select>
         </div>
+        <div style="overflow-x:auto">
+          <table class="history-table" id="transferHistTable">
+            <thead><tr>
+              <th>Transfer Date</th><th>Customer</th><th>From Room</th><th>To Room</th>
+              <th>Old Price/night</th><th>New Price/night</th><th>Note</th><th id="transferActionHead">Action</th>
+            </tr></thead>
+            <tbody id="transferTbody"></tbody>
+          </table>
+        </div>
       </div>
-      <div style="overflow-x:auto">
-        <table class="history-table" id="transferHistTable">
-          <thead><tr>
-            <th>Transfer Date</th><th>Customer</th><th>From Room</th><th>To Room</th>
-            <th>Old Price/night</th><th>New Price/night</th><th>Note</th><th id="transferActionHead">Action</th>
-          </tr></thead>
-          <tbody id="transferTbody"></tbody>
-        </table>
+
+      <!-- Edited Booking History Panel -->
+      <div id="dtab-panel-edithistory" style="display:none">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+          <select class="filter-select" id="editHistFilter" onchange="renderEditHistory()">
+            <option value="all">All Time</option>
+            <option value="today">Today</option>
+            <option value="thismonth">This Month</option>
+          </select>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="history-table">
+            <thead><tr>
+              <th>Edit Date</th><th>Room</th><th>Customer</th><th>Mobile</th><th>Changed Fields</th><th>Edited By</th>
+            </tr></thead>
+            <tbody id="editHistTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Edited Expense History Panel -->
+      <div id="dtab-panel-expedithistory" style="display:none">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+          <select class="filter-select" id="expEditHistFilter" onchange="renderExpenseEditHistory()">
+            <option value="all">All Time</option>
+            <option value="today">Today</option>
+            <option value="thismonth">This Month</option>
+          </select>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="history-table">
+            <thead><tr>
+              <th>Edit Date</th><th>Expense Date</th><th>Category</th><th>Item</th><th>Changed Fields</th><th>Edited By</th>
+            </tr></thead>
+            <tbody id="expEditHistTbody"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -568,6 +703,33 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
   <div class="modal" style="width:460px;max-width:95vw">
     <div class="modal-title"><i class="ti ti-arrows-exchange" style="color:var(--rm-accent)"></i> &nbsp;Room Transfer<button class="modal-close" onclick="closeOverlay('transferOverlay')"><i class="ti ti-x"></i></button></div>
     <div id="transferModalContent"></div>
+  </div>
+</div>
+
+<!-- ── Edit Booking Overlay ── -->
+<div class="overlay" id="editBookingPassOverlay">
+  <div class="modal" style="width:360px;max-width:95vw">
+    <div class="modal-title"><i class="ti ti-shield-lock" style="color:var(--rm-accent)"></i> &nbsp;Edit Password<button class="modal-close" onclick="closeOverlay('editBookingPassOverlay')"><i class="ti ti-x"></i></button></div>
+    <div style="font-size:12px;color:var(--rm-muted);margin-bottom:14px">Booking edit karne ke liye Owner ya Admin password enter karo.</div>
+    <div class="form-group"><label class="form-label">Owner / Admin Password</label><input class="form-input" id="editBookingPassInput" type="password" placeholder="Enter password" onkeydown="if(event.key==='Enter')confirmEditBookingPass()"></div>
+    <div id="editBookingPassErr" style="display:none;font-size:11px;color:var(--rm-red);margin-bottom:8px"><i class="ti ti-alert-circle"></i> Galat password!</div>
+    <button class="btn btn-primary" style="width:100%" onclick="confirmEditBookingPass()"><i class="ti ti-lock-open"></i> Verify & Edit</button>
+  </div>
+</div>
+
+<!-- ── Edit Booking Form Overlay ── -->
+<div class="overlay" id="editBookingFormOverlay">
+  <div class="modal" style="width:460px;max-width:95vw">
+    <div class="modal-title"><i class="ti ti-edit" style="color:var(--rm-accent)"></i> &nbsp;Edit Booking<button class="modal-close" onclick="closeOverlay('editBookingFormOverlay')"><i class="ti ti-x"></i></button></div>
+    <div id="editBookingFormContent"></div>
+  </div>
+</div>
+
+<!-- ── Edit Expense Overlay ── -->
+<div class="overlay" id="editExpenseOverlay">
+  <div class="modal" style="width:420px;max-width:95vw">
+    <div class="modal-title"><i class="ti ti-edit" style="color:var(--rm-accent)"></i> &nbsp;Edit Expense<button class="modal-close" onclick="closeOverlay('editExpenseOverlay')"><i class="ti ti-x"></i></button></div>
+    <div id="editExpenseFormContent"></div>
   </div>
 </div>
 
@@ -605,6 +767,29 @@ firebase.initializeApp(firebaseConfig);
 const db=firebase.database();
 const hotelRef=db.ref('hotelData');
 let firstSnapshotReceived=false;
+let firebaseReady=false;
+
+// Show Firebase connection status on login page
+const connRef=db.ref('.info/connected');
+connRef.on('value',snap=>{
+  const connected=snap.val()===true;
+  firebaseReady=connected;
+  const dot=document.getElementById('fbDot');
+  const txt=document.getElementById('fbStatusText');
+  if(dot&&txt){
+    if(connected){
+      dot.style.background='#3fa66c';
+      dot.style.animation='none';
+      txt.textContent='Firebase connected ✓';
+      txt.style.color='#3fa66c';
+    }else{
+      dot.style.background='#dc2626';
+      dot.style.animation='pulse 1.2s infinite';
+      txt.textContent='Firebase se connect nahi hua — internet check karo';
+      txt.style.color='#dc2626';
+    }
+  }
+});
 
 // ── Save: writes to Firebase (cloud, synced to all devices) + LocalStorage (instant local cache) ──
 function saveData(){
@@ -725,13 +910,15 @@ function statusLabel(s){return{available:'Available',occupied:'Occupied',checkou
 
 function roomCardHTML(r,d){
   let actions='';
-  const isAdmin=currentRole==='admin';
+  const isAdmin=canEdit();
   if(d.status==='available')actions=isAdmin?`<button class="btn btn-checkin" onclick="goCheckin(${r})"><i class="ti ti-login"></i> Check-in</button><button class="btn btn-maint" onclick="setMaintenance(${r})"><i class="ti ti-tool"></i></button>`:`<span style="font-size:11px;color:var(--rm-muted)">View Only</span>`;
   else if(d.status==='occupied'||d.status==='checkout')actions=isAdmin?`<button class="btn btn-checkout" onclick="openCheckoutModal(${r})"><i class="ti ti-logout"></i> Checkout</button><button class="btn" style="background:rgba(212,160,23,.12);color:var(--rm-accent)" onclick="openTransferModal(${r})"><i class="ti ti-arrows-exchange"></i> Transfer</button><button class="btn" style="background:rgba(63,166,108,.12);color:var(--rm-green)" onclick="openAddPaymentModal(${r})"><i class="ti ti-wallet"></i> Pay</button><button class="btn btn-invoice" onclick="openInvoiceForRoom(${r})"><i class="ti ti-receipt"></i> Bill</button>`:`<button class="btn btn-invoice" onclick="openInvoiceForRoom(${r})"><i class="ti ti-receipt"></i> Bill</button>`;
   else if(d.status==='checkout-clearing')actions=isAdmin?`<button class="btn btn-checkin" onclick="setAvailable(${r})" style="background:rgba(63,166,108,.15);color:var(--rm-green);font-weight:600"><i class="ti ti-door-exit"></i> Release Room</button>`:`<span style="font-size:11px;color:var(--rm-muted)">Cleaning…</span>`;
   else if(d.status==='maintenance')actions=isAdmin?`<button class="btn btn-checkin" onclick="setAvailable(${r})"><i class="ti ti-check"></i> Mark Ready</button>`:`<span style="font-size:11px;color:var(--rm-muted)">Maintenance</span>`;
   const info=d.customer?`<div class="room-info"><div class="name">${d.customer}</div><div><i class="ti ti-phone" style="font-size:11px"></i> ${d.mobile}</div><div><i class="ti ti-currency-rupee" style="font-size:11px"></i> ₹${d.price?.toLocaleString('en-IN')}</div><div><i class="ti ti-calendar" style="font-size:11px"></i> ${d.checkin?fmtDT(d.checkin):''}</div></div>`:`<div class="room-info" style="color:var(--rm-muted)">Room is ${statusLabel(d.status).toLowerCase()}</div>`;
-  return`<div class="room-card ${d.status}"><div class="room-header"><span class="room-num"><i class="ti ti-door"></i> ${r}</span><span class="status-dot ${d.status}"></span></div><div class="room-status ${d.status}">${statusLabel(d.status)}</div>${info}<div class="room-actions">${actions}</div></div>`;
+  const rtype=ROOM_TYPES[r]||'';
+  const rtypeBadge=rtype?`<span style="font-size:10px;padding:2px 7px;border-radius:12px;background:rgba(217,168,58,.18);color:#a07800;font-weight:600;letter-spacing:.3px"><i class="ti ti-bed" style="font-size:10px"></i> ${rtype}</span>`:'';
+  return`<div class="room-card ${d.status}"><div class="room-header"><span class="room-num"><i class="ti ti-door"></i> ${r}</span><span class="status-dot ${d.status}"></span></div><div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><div class="room-status ${d.status}" style="margin-bottom:0">${statusLabel(d.status)}</div>${rtypeBadge}</div>${info}<div class="room-actions">${actions}</div></div>`;
 }
 
 function renderRooms(g2,g3){
@@ -749,11 +936,18 @@ function renderAll(){
 function populateRoomSelect(){
   const sel=document.getElementById('ci-room');
   sel.innerHTML=ROOMS.filter(r=>roomData[r].status==='available').map(r=>`<option value="${r}">Room ${r}</option>`).join('');
+  // Direct Entry room select — all valid rooms (201-207, 301-308)
+  const deRoom=document.getElementById('de-room');
+  if(deRoom){
+    const cur=deRoom.value;
+    deRoom.innerHTML='<option value="">-- Room Select Karo --</option>'+ROOMS.map(r=>`<option value="${r}">Room ${r} (${ROOM_TYPES[r]||''})</option>`).join('');
+    if(cur)deRoom.value=cur;
+  }
 }
 
 function fmtDT(s){if(!s)return'';const d=new Date(s);return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short'})+' '+d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});}
 
-function goCheckin(r){showSection('checkin',document.querySelectorAll('.nav-item')[2]);setTimeout(()=>{document.getElementById('ci-room').value=r;},50);}
+function goCheckin(r){if(!canEdit()){showToast('Sirf Owner/Admin check-in kar sakta hai','red');return;}showSection('checkin');setTimeout(()=>{document.getElementById('ci-room').value=r;},50);}
 
 function paymentRowHTML(idx){
   const POPTS=`<option value="Cash">Cash</option><option value="UPI">UPI</option><option value="PhonePe">PhonePe</option><option value="Google Pay">Google Pay</option><option value="Card">Card</option><option value="Net Banking">Net Banking</option><optgroup label="── Online Booking ──"><option value="MakeMyTrip">MakeMyTrip (MMT)</option><option value="Agoda">Agoda</option><option value="Booking.com">Booking.com</option><option value="Cleartrip">Cleartrip</option><option value="Bravistay">Bravistay</option><option value="Hotel Zify">Hotel Zify</option><option value="Others">Others</option></optgroup>`;
@@ -800,6 +994,7 @@ function getTransferSegments(r){
 }
 
 function openCheckoutModal(r){
+  if(!canEdit()){showToast('Sirf Owner/Admin checkout kar sakta hai','red');return;}
   const d=roomData[r];
   const existPays=d.payments||[];
   const paidSoFar=existPays.reduce((s,p)=>s+p.amount,0);
@@ -966,7 +1161,7 @@ function closeOverlay(id){document.getElementById(id).classList.remove('show');}
 
 
 function doCheckin(){
-  if(currentRole!=='admin'){showToast('Sirf Admin check-in kar sakta hai','red');return;}
+  if(!canEdit()){showToast('Sirf Owner/Admin check-in kar sakta hai','red');return;}
   const name=document.getElementById('ci-name').value.trim(),mob=document.getElementById('ci-mobile').value.trim();
   const idp=document.getElementById('ci-id').value.trim(),room=parseInt(document.getElementById('ci-room').value);
   const price=parseInt(document.getElementById('ci-price').value)||0,dt=document.getElementById('ci-datetime').value||new Date().toISOString().slice(0,16);
@@ -989,6 +1184,7 @@ function doCheckin(){
 }
 
 function doCheckout(r){
+  if(!canEdit()){showToast('Sirf Owner/Admin checkout kar sakta hai','red');return;}
   const d=roomData[r];
   const coEl=document.getElementById('co-checkout-dt');
   const coTime=coEl&&coEl.value?new Date(coEl.value).toISOString().slice(0,16):(new Date().toISOString().slice(0,16));
@@ -1016,6 +1212,7 @@ function doCheckout(r){
 }
 
 function openAddPaymentModal(r){
+  if(!canEdit()){showToast('Sirf Owner/Admin payment add kar sakta hai','red');return;}
   const d=roomData[r];
   const existPays=d.payments||[];
   const paidSoFar=existPays.reduce((s,p)=>s+p.amount,0);
@@ -1042,6 +1239,7 @@ function openAddPaymentModal(r){
 }
 
 function saveAddPayment(r){
+  if(!canEdit()){showToast('Sirf Owner/Admin payment add kar sakta hai','red');return;}
   const mode=document.getElementById('mp-mode')?.value||'Cash';
   const amt=parseFloat(document.getElementById('mp-amt')?.value)||0;
   if(amt<=0){showToast('Valid amount enter karo','red');return;}
@@ -1057,8 +1255,8 @@ function saveAddPayment(r){
   showToast(`✅ ₹${amt.toLocaleString('en-IN')} (${mode}) payment save ho gaya — Room ${r}`);
 }
 
-function setMaintenance(r){roomData[r].status='maintenance';saveData();renderAll();}
-function setAvailable(r){roomData[r].status='available';saveData();renderAll();}
+function setMaintenance(r){if(!canEdit()){showToast('Sirf Owner/Admin maintenance set kar sakta hai','red');return;}roomData[r].status='maintenance';saveData();renderAll();}
+function setAvailable(r){if(!canEdit()){showToast('Sirf Owner/Admin room release/ready kar sakta hai','red');return;}roomData[r].status='available';saveData();renderAll();}
 
 function checkExisting(){
   const mob=document.getElementById('ci-mobile').value.trim(),box=document.getElementById('existingCustomerBox'),info=document.getElementById('existingCustomerInfo');
@@ -1072,21 +1270,31 @@ function checkExisting(){
 function renderHistoryTable(){
   const f=document.getElementById('histFilter')?.value||'all';
   // 'transferred' status entries hide karo — wo sirf transfer segments hain, actual booking nahi
-  const rows=bookings.filter(b=>{
-    if(b.status==='transferred')return false; // hide internal transfer segments
+  let rows=bookings.filter(b=>{
+    if(b.status==='transferred')return false;
     if(f==='all')return true;
     if(f==='active')return b.status==='active'||b.status==='checkout-pending';
     if(f==='checked-out')return b.status==='checked-out';
     return true;
   });
+  // Latest check-in date sabse upar
+  rows=rows.slice().sort((a,b)=>{
+    const da=a.checkin?new Date(a.checkin).getTime():0;
+    const db=b.checkin?new Date(b.checkin).getTime():0;
+    return db-da;
+  });
   document.getElementById('histTbody').innerHTML=rows.map(b=>{
     const i=bookings.indexOf(b);
     const pmColor=(!b.paymentMode||b.paymentMode==='Cash')?'var(--rm-green)':b.paymentMode==='UPI'?'var(--rm-blue)':b.paymentMode==='PhonePe'?'#6e1ec8':b.paymentMode==='Google Pay'?'#1a73e8':b.paymentMode==='Card'?'var(--rm-accent2)':'var(--rm-accent3)';
     const pmBg=(!b.paymentMode||b.paymentMode==='Cash')?'rgba(63,166,108,.12)':b.paymentMode==='UPI'?'rgba(111,179,224,.2)':b.paymentMode==='PhonePe'?'rgba(110,30,200,.12)':b.paymentMode==='Google Pay'?'rgba(26,115,232,.12)':b.paymentMode==='Card'?'rgba(240,199,94,.2)':'rgba(63,166,108,.12)';
-    const delBtn=currentRole==='admin'?`<button class="btn" style="background:rgba(220,38,38,.1);color:var(--rm-red);margin-left:4px" onclick="promptDeleteBooking(${i})" title="Delete"><i class="ti ti-trash"></i></button>`:'';
-    // Transfer badge — agar ye booking transferred room se aayi hai
+    const delBtn=isOwner()?`<button class="btn" style="background:rgba(220,38,38,.1);color:var(--rm-red);margin-left:2px" onclick="promptDeleteBooking(${i})" title="Delete"><i class="ti ti-trash"></i></button>`:'';
+    // Edit button (Owner/Admin)
+    const editBtn=canEdit()?`<button class="btn" style="background:rgba(212,160,23,.12);color:var(--rm-accent);margin-left:2px" onclick="promptEditBooking(${i})" title="Edit Booking"><i class="ti ti-edit"></i></button>`:'';
+    // Room Transfer button (only for active bookings, Owner/Admin)
+    const transferBtn=(canEdit()&&(b.status==='active'||b.status==='checkout-pending')&&roomData[b.room]&&roomData[b.room].customer)?`<button class="btn" style="background:rgba(63,166,108,.12);color:var(--rm-green);margin-left:2px" onclick="openTransferModal(${b.room})" title="Room Transfer"><i class="ti ti-arrows-exchange"></i></button>`:'';
+    // Transfer badge
     const transferBadge=b.transferredFrom?`<span style="font-size:9px;padding:1px 6px;border-radius:10px;background:rgba(212,160,23,.15);color:var(--rm-accent);margin-left:4px"><i class="ti ti-arrows-exchange"></i> from ${b.transferredFrom}</span>`:'';
-    return`<tr><td><b>${b.room}</b>${transferBadge}</td><td>${b.customer}</td><td>${b.mobile}</td><td>${fmtDT(b.checkin)}</td><td>${b.checkout?fmtDT(b.checkout):'—'}</td><td>₹${b.price.toLocaleString('en-IN')}</td><td><span style="font-size:11px;padding:2px 8px;border-radius:20px;background:${pmBg};color:${pmColor}">${b.paymentMode||'Cash'}</span></td><td><span class="badge ${b.status==='checked-out'?'badge-green':'badge-red'}">${b.status==='active'?'Active':b.status==='checkout-pending'?'Pending':'Checked Out'}</span></td><td style="display:flex;gap:2px"><button class="btn btn-invoice" onclick="openInvoiceForBooking(${i})"><i class="ti ti-receipt"></i> Bill</button>${delBtn}</td></tr>`;
+    return`<tr><td><b>${b.room}</b>${transferBadge}</td><td>${b.customer}</td><td>${b.mobile}</td><td>${fmtDT(b.checkin)}</td><td>${b.checkout?fmtDT(b.checkout):'—'}</td><td>₹${b.price.toLocaleString('en-IN')}</td><td><span style="font-size:11px;padding:2px 8px;border-radius:20px;background:${pmBg};color:${pmColor}">${b.paymentMode||'Cash'}</span></td><td><span class="badge ${b.status==='checked-out'?'badge-green':'badge-red'}">${b.status==='active'?'Active':b.status==='checkout-pending'?'Pending':'Checked Out'}</span></td><td style="display:flex;gap:2px;flex-wrap:wrap"><button class="btn btn-invoice" onclick="openInvoiceForBooking(${i})"><i class="ti ti-receipt"></i> Bill</button>${editBtn}${transferBtn}${delBtn}</td></tr>`;
   }).join('');
 }
 
@@ -1095,13 +1303,14 @@ function renderCustomerTable(){
   const rows=Object.values(customers).filter(c=>!q||c.mobile.includes(q)||c.name.toLowerCase().includes(q));
   document.getElementById('custTbody').innerHTML=rows.map(c=>{
     const spent=c.bookings.reduce((s,b)=>s+b.price,0),last=c.bookings[c.bookings.length-1];
-    return`<tr><td>${c.name}</td><td>${c.mobile}</td><td style="color:var(--rm-muted)">${c.id||'—'}</td><td>Room ${last?.room||'—'}</td><td>${c.bookings.length}</td><td>₹${spent.toLocaleString('en-IN')}</td><td><button class="btn btn-checkin" onclick="quickRebook('${c.mobile}')"><i class="ti ti-login"></i> Re-book</button></td><td><button class="btn btn-invoice" onclick="openInvoiceForCustomer('${c.mobile}')"><i class="ti ti-receipt"></i> Bill</button></td></tr>`;
+    return`<tr><td>${c.name}</td><td>${c.mobile}</td><td style="color:var(--rm-muted)">${c.id||'—'}</td><td>Room ${last?.room||'—'}</td><td>${c.bookings.length}</td><td>₹${spent.toLocaleString('en-IN')}</td><td>${canEdit()?`<button class="btn btn-checkin" onclick="quickRebook('${c.mobile}')"><i class="ti ti-login"></i> Re-book</button>`:'<span style="font-size:11px;color:var(--rm-muted)">View Only</span>'}</td><td><button class="btn btn-invoice" onclick="openInvoiceForCustomer('${c.mobile}')"><i class="ti ti-receipt"></i> Bill</button></td></tr>`;
   }).join('');
 }
 
 function quickRebook(mob){
+  if(!canEdit()){showToast('Sirf Owner/Admin re-book kar sakta hai','red');return;}
   const c=customers[mob];if(!c)return;
-  showSection('checkin',document.querySelectorAll('.nav-item')[2]);
+  showSection('checkin');
   setTimeout(()=>{document.getElementById('ci-name').value=c.name;document.getElementById('ci-mobile').value=c.mobile;document.getElementById('ci-id').value=c.id||'';checkExisting();},50);
 }
 
@@ -1211,43 +1420,132 @@ function renderRevStats(){
     return `<tr><td><b>${b.room}</b></td><td>${b.customer}</td><td>₹${b.price.toLocaleString('en-IN')}</td><td><span style="font-size:11px;padding:2px 7px;border-radius:20px;${pmBadge(b.payments&&b.payments.length===1?b.payments[0].mode:b.paymentMode||'Cash')}">${displayMode}</span></td><td>${fmtDT(b.checkin)}</td><td>${b.checkout?fmtDT(b.checkout):'—'}</td><td><span class="badge ${b.status==='checked-out'?'badge-green':'badge-red'}">${b.status==='checked-out'?'Collected':'Pending'}</span></td></tr>`;
   }).join('');
 
-  // Revenue by Room chart — filter ke hisaab se update karo
+  // Revenue Chart — daily (month selected) ya monthly (12 months)
   const elRoom=document.getElementById('roomRevenueChart');
   if(elRoom&&typeof Chart!=='undefined'){
     if(roomRevenueChart){roomRevenueChart.destroy();roomRevenueChart=null;}
-    const palette=['#d4a017','#f0c75e','#3fa66c','#6fb3e0'];
-    const roomLabels=ROOMS.map(r=>'Room '+r);
-    const roomData2=ROOMS.map(r=>filteredBookings.filter(b=>b.room===r&&b.status==='checked-out').reduce((a,b)=>a+b.price,0));
-    const colors=ROOMS.map((r,i)=>palette[i%palette.length]);
+    const revF=document.getElementById('revMonthFilter')?.value||'all';
+    const pickedMonth=document.getElementById('revMonthPicker')?.value||'';
+    const isDailyMode=revF==='pickmonth'&&pickedMonth;
+
+    let chartLabels=[],chartRevs=[],chartExps=[];
+
+    if(isDailyMode){
+      // Us month ke har din ki revenue
+      const [yr,mo]=pickedMonth.split('-').map(Number);
+      const daysInMonth=new Date(yr,mo,0).getDate();
+      const d=new Date(yr,mo-1,1);
+      const mName=d.toLocaleString('en-IN',{month:'long',year:'numeric'});
+      if(document.getElementById('revChartTitle'))
+        document.getElementById('revChartTitle').innerHTML=`<i class="ti ti-chart-bar"></i> Daily Revenue — ${mName}`;
+      for(let day=1;day<=daysInMonth;day++){
+        const dateStr=`${pickedMonth}-${String(day).padStart(2,'0')}`;
+        chartLabels.push(String(day));
+        // Revenue: us din checkout hue bookings
+        const dayRev=bookings.filter(b=>b.status==='checked-out'&&b.checkout&&b.checkout.startsWith(dateStr))
+          .reduce((s,b)=>{
+            const ci=new Date(b.checkin),co=new Date(b.checkout);
+            const nights=Math.max(1,Math.round((co-ci)/(1000*60*60*24)));
+            return s+(b.price*nights);
+          },0);
+        // Expenses: us din ki
+        const dayExp=expenses.filter(e=>e.date===dateStr).reduce((s,e)=>s+e.amount,0);
+        chartRevs.push(dayRev);
+        chartExps.push(dayExp);
+      }
+    } else {
+      // Last 12 months
+      if(document.getElementById('revChartTitle'))
+        document.getElementById('revChartTitle').innerHTML='<i class="ti ti-chart-bar"></i> Revenue by Month';
+      const now=new Date();
+      for(let i=11;i>=0;i--){
+        const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+        const ym=d.toISOString().slice(0,7);
+        chartLabels.push(d.toLocaleString('en-IN',{month:'short',year:'2-digit'}));
+        const mRev=bookings.filter(b=>b.status==='checked-out'&&b.checkout&&b.checkout.startsWith(ym))
+          .reduce((s,b)=>{
+            const ci=new Date(b.checkin),co=new Date(b.checkout);
+            const nights=Math.max(1,Math.round((co-ci)/(1000*60*60*24)));
+            return s+(b.price*nights);
+          },0);
+        const mExp=expenses.filter(e=>e.date&&e.date.startsWith(ym)).reduce((s,e)=>s+e.amount,0);
+        chartRevs.push(mRev);
+        chartExps.push(mExp);
+      }
+    }
+
     roomRevenueChart=new Chart(elRoom,{
       type:'bar',
-      data:{labels:roomLabels,datasets:[{label:'Revenue',data:roomData2,backgroundColor:colors,borderRadius:5,maxBarThickness:34}]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'₹'+c.parsed.y.toLocaleString('en-IN')}}},
-        scales:{y:{beginAtZero:true,ticks:{color:'#767b88',font:{size:10},callback:v=>'₹'+v.toLocaleString('en-IN')},grid:{color:'#e1e4ea'}},x:{ticks:{color:'#767b88',font:{size:9}},grid:{display:false}}}}
+      data:{
+        labels:chartLabels,
+        datasets:[
+          {label:'Revenue',data:chartRevs,backgroundColor:'rgba(63,166,108,0.78)',borderRadius:4,maxBarThickness:isDailyMode?18:28},
+          {label:'Expenses',data:chartExps,backgroundColor:'rgba(220,38,38,0.55)',borderRadius:4,maxBarThickness:isDailyMode?18:28}
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{display:true,position:'top',labels:{color:'#767b88',font:{size:10},boxWidth:12}},
+          tooltip:{callbacks:{
+            title:t=>isDailyMode?`Day ${t[0].label}`:t[0].label,
+            label:ctx=>'₹'+ctx.parsed.y.toLocaleString('en-IN')
+          }}
+        },
+        scales:{
+          y:{beginAtZero:true,ticks:{color:'#767b88',font:{size:10},callback:v=>'₹'+v.toLocaleString('en-IN')},grid:{color:'#e1e4ea'}},
+          x:{ticks:{color:'#767b88',font:{size:isDailyMode?8:9},maxRotation:0},grid:{display:false}}
+        }
+      }
     });
   }
 }
 
+function onRevFilterChange(){
+  const val=document.getElementById('revMonthFilter')?.value;
+  const picker=document.getElementById('revMonthPicker');
+  if(picker){
+    picker.style.display=val==='pickmonth'?'':'none';
+    // Default to current month when picker shown
+    if(val==='pickmonth'&&!picker.value){
+      const now=new Date();
+      picker.value=now.toISOString().slice(0,7);
+    }
+  }
+  renderRevStats();
+}
+
+function toggleExpItem(){
+  const cat=document.getElementById('exp-category')?.value||'';
+  const grp=document.getElementById('exp-item-group');
+  if(grp)grp.style.display=cat==='Miscellaneous'?'':'none';
+  if(cat!=='Miscellaneous'){const el=document.getElementById('exp-item');if(el)el.value='';}
+}
+
 function addExpense(){
-  if(currentRole!=='admin'){showToast('Sirf Admin expense add kar sakta hai','red');return;}
+  if(!canEdit()){showToast('Sirf Owner/Admin expense add kar sakta hai','red');return;}
   const dateEl=document.getElementById('exp-date');
   const amtEl=document.getElementById('exp-amount');
   const catEl=document.getElementById('exp-category');
   const noteEl=document.getElementById('exp-note');
+  const itemEl=document.getElementById('exp-item');
   const date=dateEl?dateEl.value.trim():'';
   const amtRaw=amtEl?amtEl.value.trim():'';
   const amount=parseFloat(amtRaw);
   const cat=catEl?catEl.value:'Miscellaneous';
   const note=noteEl?noteEl.value.trim():'';
+  const item=itemEl?itemEl.value.trim():'';
   if(!date){showToast('Date select karo','red');return;}
   if(!amtRaw||isNaN(amount)||amount<=0){showToast('Valid amount enter karo (0 se zyada)','red');return;}
-  expenses.push({id:Date.now(),date,category:cat,amount,note});
+  if(cat==='Miscellaneous'&&!item){showToast('Miscellaneous ka item naam likho','red');return;}
+  expenses.push({id:Date.now(),date,category:cat,amount,note,item:cat==='Miscellaneous'?item:''});
   if(amtEl)amtEl.value='';
   if(noteEl)noteEl.value='';
+  if(itemEl)itemEl.value='';
   saveData();
   renderExpenses();
   renderRevStats();
-  showToast(`Expense add ho gaya: Rs.${amount.toLocaleString('en-IN')} - ${cat}`);
+  showToast(`Expense add ho gaya: Rs.${amount.toLocaleString('en-IN')} - ${cat==='Miscellaneous'?item:cat}`);
 }
 
 function deleteExpense(id){
@@ -1278,17 +1576,97 @@ function renderExpenses(){
 
   const adminRows=filtered.length?filtered.slice().reverse().map(e=>`<tr>
     <td>${e.date}</td><td>${e.category}</td><td style="color:var(--rm-red);font-weight:500">₹${e.amount.toLocaleString('en-IN')}</td>
-    <td style="color:var(--rm-muted)">${e.note||'—'}</td>
-    <td><button class="btn" style="background:rgba(220,38,38,.1);color:var(--rm-red)" onclick="promptDeleteExpense(${e.id})"><i class="ti ti-trash"></i></button></td>
+    <td style="color:var(--rm-muted)">${e.item?'<b>'+e.item+'</b>'+(e.note?' — '+e.note:''):e.note||'—'}</td>
+    <td style="display:flex;gap:4px"><button class="btn" style="background:rgba(212,160,23,.12);color:var(--rm-accent)" onclick="promptEditExpense(${e.id})" title="Edit"><i class="ti ti-edit"></i></button>${isOwner()?`<button class="btn" style="background:rgba(220,38,38,.1);color:var(--rm-red)" onclick="promptDeleteExpense(${e.id})" title="Delete"><i class="ti ti-trash"></i></button>`:''}</td>
   </tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--rm-muted);padding:20px">Koi expense nahi mila</td></tr>';
 
   const viewRows=filtered.length?filtered.slice().reverse().map(e=>`<tr>
     <td>${e.date}</td><td>${e.category}</td><td style="color:var(--rm-red);font-weight:500">₹${e.amount.toLocaleString('en-IN')}</td>
-    <td style="color:var(--rm-muted)">${e.note||'—'}</td>
+    <td style="color:var(--rm-muted)">${e.item?'<b>'+e.item+'</b>'+(e.note?' — '+e.note:''):e.note||'—'}</td>
   </tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--rm-muted);padding:20px">Koi expense nahi mila</td></tr>';
 
   if(document.getElementById('expTbody'))document.getElementById('expTbody').innerHTML=adminRows;
   if(document.getElementById('expTbodyView'))document.getElementById('expTbodyView').innerHTML=viewRows;
+}
+
+// ── Edit Expense (Owner/Admin) ────────────────────────────────
+let expenseEditHistory=[];
+let pendingEditExpenseId=null;
+const EXP_CATEGORIES=['Electricity','Staff Salary','Maintenance','Housekeeping Supplies','Food & Beverage','Laundry','Marketing','Miscellaneous'];
+
+function promptEditExpense(id){
+  if(!canEdit()){showToast('Sirf Owner/Admin expense edit kar sakta hai','red');return;}
+  const exp=expenses.find(x=>x.id===id);
+  if(!exp){showToast('Expense nahi mila','red');return;}
+  pendingEditExpenseId=id;
+  document.getElementById('editExpenseFormContent').innerHTML=`
+    <div class="form-group"><label class="form-label">Date *</label><input class="form-input" id="ee-date" type="date" value="${exp.date}"></div>
+    <div class="form-group"><label class="form-label">Category *</label>
+      <select class="form-input" id="ee-category" onchange="toggleEditExpItem()">
+        ${EXP_CATEGORIES.map(c=>`<option ${c===exp.category?'selected':''}>${c}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group" id="ee-item-group" style="display:${exp.category==='Miscellaneous'?'block':'none'}">
+      <label class="form-label">Item Name *</label><input class="form-input" id="ee-item" value="${exp.item||''}" placeholder="Item ka naam likho">
+    </div>
+    <div class="form-group"><label class="form-label">Amount (₹) *</label><input class="form-input" id="ee-amount" type="number" value="${exp.amount}"></div>
+    <div class="form-group"><label class="form-label">Note</label><input class="form-input" id="ee-note" value="${exp.note||''}" placeholder="Optional description"></div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn btn-primary" style="flex:1" onclick="saveEditExpense()"><i class="ti ti-check"></i> Save Changes</button>
+      <button class="btn" style="flex:1;background:rgba(107,114,128,.12);color:var(--rm-gray)" onclick="closeOverlay('editExpenseOverlay')">Cancel</button>
+    </div>
+  `;
+  document.getElementById('editExpenseOverlay').classList.add('show');
+}
+
+function toggleEditExpItem(){
+  const cat=document.getElementById('ee-category')?.value;
+  const grp=document.getElementById('ee-item-group');
+  if(grp)grp.style.display=cat==='Miscellaneous'?'block':'none';
+}
+
+function saveEditExpense(){
+  const exp=expenses.find(x=>x.id===pendingEditExpenseId);
+  if(!exp){showToast('Expense nahi mila','red');return;}
+  const snap={date:exp.date,category:exp.category,item:exp.item,amount:exp.amount,note:exp.note};
+  const date=document.getElementById('ee-date').value.trim();
+  const cat=document.getElementById('ee-category').value;
+  const item=document.getElementById('ee-item')?.value.trim()||'';
+  const amount=parseFloat(document.getElementById('ee-amount').value);
+  const note=document.getElementById('ee-note').value.trim();
+  if(!date){showToast('Date select karo','red');return;}
+  if(!amount||isNaN(amount)||amount<=0){showToast('Valid amount enter karo (0 se zyada)','red');return;}
+  if(cat==='Miscellaneous'&&!item){showToast('Miscellaneous ka item naam likho','red');return;}
+  exp.date=date;
+  exp.category=cat;
+  exp.item=cat==='Miscellaneous'?item:'';
+  exp.amount=amount;
+  exp.note=note;
+  // Log changes to Edited Expense History
+  const changed=[];
+  if(snap.date!==exp.date)changed.push('Date: '+snap.date+' → '+exp.date);
+  if(snap.category!==exp.category)changed.push('Category: '+snap.category+' → '+exp.category);
+  if((snap.item||'')!==(exp.item||''))changed.push('Item: "'+(snap.item||'—')+'" → "'+(exp.item||'—')+'"');
+  if(snap.amount!==exp.amount)changed.push('Amount: ₹'+snap.amount.toLocaleString('en-IN')+' → ₹'+exp.amount.toLocaleString('en-IN'));
+  if((snap.note||'')!==(exp.note||''))changed.push('Note: "'+(snap.note||'—')+'" → "'+(exp.note||'—')+'"');
+  if(changed.length){
+    expenseEditHistory.push({
+      editDate:new Date().toISOString(),
+      expenseId:exp.id,
+      expenseDate:exp.date,
+      category:exp.category,
+      item:exp.item,
+      changes:changed.join(' | '),
+      editedBy:roleLabel()
+    });
+    try{localStorage.setItem('hms_expenseEditHistory',JSON.stringify(expenseEditHistory));}catch(err){}
+  }
+  saveData();
+  closeOverlay('editExpenseOverlay');
+  renderExpenses();
+  renderRevStats();
+  if(document.getElementById('dtab-panel-expedithistory'))renderExpenseEditHistory();
+  showToast('✅ Expense successfully update ho gaya!');
 }
 
 function downloadBookingHistoryCSV(){
@@ -1363,13 +1741,14 @@ function showSection(name,el){
   document.getElementById('sec-'+name).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   if(el)el.classList.add('active');
-  const titles={dashboard:'Dashboard & Room Layout',checkin:'Quick Check-in',guests:'Booking History',revenue:'Revenue & Payments',expenses:'Expenses',settings:'Settings — Password Management',transfers:'Room Transfer History'};
+  const titles={dashboard:'Dashboard & Room Layout',checkin:'Quick Check-in',guests:'Booking History',revenue:'Revenue & Payments',expenses:'Expenses',settings:'Settings — Password Management',transfers:'Data Change'};
   document.getElementById('topbarTitle').textContent=titles[name]||name;
-  if(name==='settings'&&currentRole!=='admin'){showToast('Settings sirf Admin ke liye hai','red');showSection('dashboard',document.querySelectorAll('.nav-item')[0]);return;}
-  if(name==='transfers'&&currentRole!=='admin'){showToast('Transfer history sirf Admin ke liye hai','red');showSection('dashboard',document.querySelectorAll('.nav-item')[0]);return;}
+  if(name==='settings'&&!isOwner()){showToast('Settings sirf Owner ke liye hai','red');showSection('dashboard',document.querySelectorAll('.nav-item')[0]);return;}
+  if(name==='transfers'&&!isOwner()){showToast('Data Change sirf Owner ke liye hai','red');showSection('dashboard',document.querySelectorAll('.nav-item')[0]);return;}
   document.getElementById('topbarTitle').textContent=titles[name]||name;
   if(name==='checkin'){const now=new Date();now.setMinutes(now.getMinutes()-now.getTimezoneOffset());document.getElementById('ci-datetime').value=now.toISOString().slice(0,16);populateRoomSelect();}
-  if(name==='guests'){renderCustomerTable();renderHistoryTable();}
+
+  if(name==='guests'){renderCustomerTable();renderHistoryTable();const dep=document.getElementById('directEntryPanel');if(dep)dep.style.display=canEdit()?'':'none';const sel=document.getElementById('de-room');if(sel)sel.innerHTML=ROOMS.map(r=>`<option value="${r}">Room ${r} (${ROOM_TYPES[r]||''})</option>`).join('');const ci=document.getElementById('de-checkin');if(ci&&!ci.value){const n=new Date();n.setMinutes(n.getMinutes()-n.getTimezoneOffset());ci.value=n.toISOString().slice(0,16);}}
   if(name==='expenses'){
     const td=document.getElementById('exp-date');
     if(td&&!td.value){const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());td.value=d.toISOString().split('T')[0];}
@@ -1415,7 +1794,7 @@ function renderCharts(){
     });
   }
 }
-// Revenue by Room chart is handled inside renderRevStats() with filter support
+// Revenue by Month chart is handled inside renderRevStats()
 
 function showToast(msg,color='green'){
   const t=document.getElementById('toast');t.textContent=msg;t.style.borderLeftColor=color==='red'?'var(--rm-red)':'var(--rm-green)';t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);
@@ -1723,22 +2102,56 @@ function openInvoiceForCustomer(mob){
 
 function updateClock(){document.getElementById('clockEl').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short'})+' '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});}
 
-// ── Password Store (localStorage persisted) ──────────────────
-function getPwd(key,def){return localStorage.getItem('hpwd_'+key)||def;}
-function setPwd(key,val){localStorage.setItem('hpwd_'+key,val);}
+// ── Password Store (Firebase + localStorage synced — works on ALL devices) ──────────────────
+const pwdRef=db.ref('hotelPasswords');
+let _pwdCache={owner:'peacock835',admin:'staff835',view:'hotel835',delete:'admin835'};
+
+// Load passwords from Firebase on startup
+pwdRef.on('value',snap=>{
+  const val=snap.val();
+  if(val){
+    _pwdCache.owner=val.owner||'peacock835';
+    _pwdCache.admin=val.admin||'staff835';
+    _pwdCache.view=val.view||'hotel835';
+    _pwdCache.delete=val.delete||'admin835';
+  }
+});
+
+function getPwd(key,def){return _pwdCache[key]||def;}
+function setPwd(key,val){
+  _pwdCache[key]=val;
+  // Save to Firebase so ALL devices get updated password
+  pwdRef.child(key).set(val).catch(e=>console.warn('Password sync failed',e));
+}
 
 // ── Role & Login ──────────────────────────────────────────────
-let currentRole=null; // 'admin' | 'viewer'
+let currentRole=null; // 'owner' | 'admin' | 'viewer'
 let pendingDeleteIndex=null;
 let pendingDeleteExpId=null;
 let pendingDeleteTransferId=null;
 
+// Owner = full access (entry, edit, delete, settings, password mgmt, clear data)
+// Admin = entry + edit only (no delete, no settings, no data-clear)
+// Viewer = view only, no actions
+function isOwner(){return currentRole==='owner';}
+function canEdit(){return currentRole==='owner'||currentRole==='admin';}
+function roleLabel(){return currentRole==='owner'?'Owner':currentRole==='admin'?'Admin':'Viewer';}
+
 function doLogin(){
   const u=document.getElementById('loginUser').value.trim().toUpperCase();
   const p=document.getElementById('loginPass').value;
-  const adminPwd=getPwd('admin','peacock835');
+  const ownerPwd=getPwd('owner','peacock835');
+  const adminPwd=getPwd('admin','staff835');
   const viewPwd=getPwd('view','hotel835');
-  if(u==='HOTEL PEACOCK'&&p===adminPwd){
+  if(!firebaseReady){
+    // Firebase not connected — warn but still allow login with cached passwords
+    const txt=document.getElementById('fbStatusText');
+    if(txt){txt.textContent='⚠️ Offline mode — data sync nahi hogi';txt.style.color='#d9a83a';}
+  }
+  if(u==='HOTEL PEACOCK'&&p===ownerPwd){
+    currentRole='owner';
+    launchApp();
+  }else if(u==='HOTEL PEACOCK'&&p===adminPwd){
     currentRole='admin';
     launchApp();
   }else if(u==='HOTEL PEACOCK'&&p===viewPwd){
@@ -1759,20 +2172,25 @@ function launchApp(){
 }
 
 function applyRoleUI(){
-  const isAdmin=currentRole==='admin';
+  const owner=isOwner();
+  const editable=canEdit();
   // Role tag
-  document.getElementById('roleTag').textContent=isAdmin?'👑 Admin':'👁 View Only';
-  document.getElementById('roleTag').style.background=isAdmin?'rgba(212,160,23,.12)':'rgba(111,179,224,.2)';
-  document.getElementById('roleTag').style.color=isAdmin?'var(--rm-accent)':'#2c6ea3';
-  // Settings & Transfer nav only for admin
-  document.getElementById('settingsNavBtn').style.display=isAdmin?'':'none';
-  document.getElementById('transferNavBtn').style.display=isAdmin?'':'none';
-  // Transfer action column header
+  const tagEl=document.getElementById('roleTag');
+  if(owner){tagEl.textContent='👑 Owner';tagEl.style.background='rgba(212,160,23,.12)';tagEl.style.color='var(--rm-accent)';}
+  else if(editable){tagEl.textContent='🛠 Admin';tagEl.style.background='rgba(111,179,224,.2)';tagEl.style.color='#2c6ea3';}
+  else{tagEl.textContent='👁 View Only';tagEl.style.background='rgba(107,114,128,.12)';tagEl.style.color='var(--rm-gray)';}
+  // Settings page & Clear-All-Data: Owner only (full access)
+  document.getElementById('settingsNavBtn').style.display=owner?'':'none';
+  const dcb=document.getElementById('dashClearAllBtn');if(dcb)dcb.style.display=owner?'':'none';
+  // Data Change (Transfer/Edit history): Owner only — full audit access
+  document.getElementById('transferNavBtn').style.display=owner?'':'none';
+  // Transfer action column header (delete) — Owner only
   const th=document.getElementById('transferActionHead');
-  if(th)th.style.display=isAdmin?'':'none';
-  // Expenses: admin sees add panel, viewer sees read-only panel
-  document.getElementById('expAddPanel').style.display=isAdmin?'grid':'none';
-  document.getElementById('expViewPanel').style.display=isAdmin?'none':'block';
+  if(th)th.style.display=owner?'':'none';
+  // Expenses: Owner/Admin see add+edit panel, Viewer sees read-only panel
+  document.getElementById('expAddPanel').style.display=editable?'grid':'none';
+  document.getElementById('expViewPanel').style.display=editable?'none':'block';
+  const dep=document.getElementById('directEntryPanel');if(dep)dep.style.display=editable?'':'none';
 }
 
 function doLogout(){
@@ -1785,13 +2203,13 @@ function doLogout(){
 
 // ── View-only guard ───────────────────────────────────────────
 function adminOnly(fn){
-  if(currentRole!=='admin'){showToast('Yeh action sirf Admin ke liye hai','red');return;}
+  if(!canEdit()){showToast('Yeh action sirf Owner/Admin ke liye hai','red');return;}
   fn();
 }
 
-// ── Delete booking (password protected) ──────────────────────
+// ── Delete booking (password protected, Owner only) ──────────
 function promptDeleteBooking(i){
-  if(currentRole!=='admin'){showToast('Sirf Admin delete kar sakta hai','red');return;}
+  if(!isOwner()){showToast('Sirf Owner delete kar sakta hai','red');return;}
   pendingDeleteIndex=i;
   pendingDeleteExpId=null;
   document.getElementById('deletePassDesc').textContent='Yeh booking permanently delete ho jaayegi. Aage badhne ke liye delete password enter karo.';
@@ -1802,9 +2220,9 @@ function promptDeleteBooking(i){
   setTimeout(()=>document.getElementById('deletePassInput').focus(),100);
 }
 
-// ── Delete expense (password protected) ──────────────────────
+// ── Delete expense (password protected, Owner only) ──────────
 function promptDeleteExpense(id){
-  if(currentRole!=='admin'){showToast('Sirf Admin delete kar sakta hai','red');return;}
+  if(!isOwner()){showToast('Sirf Owner delete kar sakta hai','red');return;}
   pendingDeleteExpId=id;
   pendingDeleteIndex=null;
   document.getElementById('deletePassDesc').textContent='Yeh expense permanently delete ho jaayega. Aage badhne ke liye delete password enter karo.';
@@ -1815,27 +2233,106 @@ function promptDeleteExpense(id){
   setTimeout(()=>document.getElementById('deletePassInput').focus(),100);
 }
 
-function confirmDelete(){
-  const p=document.getElementById('deletePassInput').value;
-  const delPwd=getPwd('delete','admin835');
-  if(p!==delPwd){
-    document.getElementById('deletePassErr').style.display='block';
-    document.getElementById('deletePassInput').value='';
+// ── Edit Booking (password protected) ────────────────────────
+let pendingEditBookingIndex=null;
+
+function promptEditBooking(i){
+  if(!canEdit()){showToast('Sirf Owner/Admin edit kar sakta hai','red');return;}
+  pendingEditBookingIndex=i;
+  document.getElementById('editBookingPassInput').value='';
+  document.getElementById('editBookingPassErr').style.display='none';
+  document.getElementById('editBookingPassOverlay').classList.add('show');
+  setTimeout(()=>document.getElementById('editBookingPassInput').focus(),100);
+}
+
+function confirmEditBookingPass(){
+  const p=document.getElementById('editBookingPassInput').value;
+  const ownerPwd=getPwd('owner','peacock835');
+  const adminPwd=getPwd('admin','staff835');
+  if(p!==ownerPwd&&p!==adminPwd){
+    document.getElementById('editBookingPassErr').style.display='block';
+    document.getElementById('editBookingPassInput').value='';
     return;
   }
-  if(pendingDeleteIndex!==null){
-    bookings.splice(pendingDeleteIndex,1);
-    saveData();renderHistoryTable();renderRevStats();renderStats();
-    showToast('Booking delete ho gayi');
-  }else if(pendingDeleteExpId!==null){
-    expenses=expenses.filter(e=>e.id!==pendingDeleteExpId);
-    saveData();renderExpenses();renderRevStats();
-    showToast('Expense delete ho gaya');
-  }
-  closeOverlay('deletePassOverlay');
-  pendingDeleteIndex=null;
-  pendingDeleteExpId=null;
+  closeOverlay('editBookingPassOverlay');
+  openEditBookingForm(pendingEditBookingIndex);
 }
+
+function openEditBookingForm(i){
+  const b=bookings[i];if(!b)return;
+  const POPTS=`<option value="">-- Koi nahi --</option><option value="Cash">Cash</option><option value="UPI">UPI</option><option value="PhonePe">PhonePe</option><option value="Google Pay">Google Pay</option><option value="Card">Card</option><option value="Net Banking">Net Banking</option><optgroup label="── Online Booking ──"><option value="MakeMyTrip">MakeMyTrip (MMT)</option><option value="Agoda">Agoda</option><option value="Booking.com">Booking.com</option><option value="Cleartrip">Cleartrip</option><option value="Bravistay">Bravistay</option><option value="Hotel Zify">Hotel Zify</option><option value="Others">Others</option></optgroup>`;
+  const ciVal=b.checkin?(()=>{const d=new Date(b.checkin);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16);})():'';
+  const coVal=b.checkout?(()=>{const d=new Date(b.checkout);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16);})():'';
+  document.getElementById('editBookingFormContent').innerHTML=`
+    <div class="form-group"><label class="form-label">Customer Name</label><input class="form-input" id="eb-name" value="${b.customer||''}"></div>
+    <div class="form-group"><label class="form-label">Mobile</label><input class="form-input" id="eb-mobile" value="${b.mobile||''}" maxlength="10"></div>
+    <div class="form-group"><label class="form-label">Room No.</label><input class="form-input" id="eb-room" value="${b.room||''}" type="number"></div>
+    <div class="form-group"><label class="form-label">Price / night (₹)</label><input class="form-input" id="eb-price" type="number" value="${b.price||0}"></div>
+    <div class="form-group"><label class="form-label">Check-in Date & Time</label><input class="form-input" id="eb-checkin" type="datetime-local" value="${ciVal}"></div>
+    <div class="form-group"><label class="form-label">Check-out Date & Time (blank = active)</label><input class="form-input" id="eb-checkout" type="datetime-local" value="${coVal}"></div>
+    <div class="form-group"><label class="form-label">Payment Mode</label><select class="form-input" id="eb-paymode">${POPTS}</select></div>
+    <div class="form-group"><label class="form-label">ID Proof</label><input class="form-input" id="eb-id" value="${b.idProof||''}"></div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn btn-primary" style="flex:1" onclick="saveEditBooking(${i})"><i class="ti ti-check"></i> Save Changes</button>
+      <button class="btn" style="flex:1;background:rgba(107,114,128,.12);color:var(--rm-gray)" onclick="closeOverlay('editBookingFormOverlay')">Cancel</button>
+    </div>
+  `;
+  // Set payment mode
+  const sel=document.getElementById('eb-paymode');
+  if(sel&&b.paymentMode){for(let o of sel.options){if(o.value===b.paymentMode){o.selected=true;break;}}}
+  document.getElementById('editBookingFormOverlay').classList.add('show');
+}
+
+function saveEditBooking(i){
+  const b=bookings[i];if(!b)return;
+  // Snapshot before edit for history
+  const bSnap={customer:b.customer,mobile:b.mobile,room:b.room,price:b.price,checkin:b.checkin,checkout:b.checkout};
+  const name=document.getElementById('eb-name').value.trim();
+  const mobile=document.getElementById('eb-mobile').value.trim();
+  const room=parseInt(document.getElementById('eb-room').value)||b.room;
+  const price=parseFloat(document.getElementById('eb-price').value)||b.price;
+  const ciRaw=document.getElementById('eb-checkin').value;
+  const coRaw=document.getElementById('eb-checkout').value;
+  const paymode=document.getElementById('eb-paymode').value;
+  const idProof=document.getElementById('eb-id').value.trim();
+  if(!name||!mobile){showToast('Name aur Mobile required hai','red');return;}
+  // Update booking
+  b.customer=name;
+  b.mobile=mobile;
+  b.room=room;
+  b.price=price;
+  b.checkin=ciRaw?new Date(ciRaw).toISOString():b.checkin;
+  b.checkout=coRaw?new Date(coRaw).toISOString():null;
+  b.paymentMode=paymode||b.paymentMode;
+  b.idProof=idProof;
+  if(!coRaw)b.status='active';
+  // roomData bhi update karo agar active hai
+  if(b.status==='active'&&roomData[room]&&roomData[room].customer){
+    roomData[room].customer=name;
+    roomData[room].mobile=mobile;
+    roomData[room].price=price;
+  }
+  // customers update
+  if(customers[mobile]){
+    customers[mobile].name=name;
+  }
+  // Log edit history
+  const changed=[];
+  if(bSnap.customer!==b.customer)changed.push('Name: "'+bSnap.customer+'" → "'+b.customer+'"');
+  if(bSnap.mobile!==b.mobile)changed.push('Mobile: '+bSnap.mobile+' → '+b.mobile);
+  if(bSnap.room!==b.room)changed.push('Room: '+bSnap.room+' → '+b.room);
+  if(bSnap.price!==b.price)changed.push('Price: ₹'+bSnap.price+' → ₹'+b.price);
+  if(bSnap.checkin!==b.checkin)changed.push('Check-in changed');
+  if(bSnap.checkout!==b.checkout)changed.push('Check-out changed');
+  if(changed.length){
+    editHistory.push({editDate:new Date().toISOString(),room:b.room,customer:b.customer,mobile:b.mobile,changes:changed.join(' | '),editedBy:roleLabel()});
+    try{localStorage.setItem('hms_editHistory',JSON.stringify(editHistory));}catch(e){}
+  }
+  saveData();closeOverlay('editBookingFormOverlay');renderAll();
+  showToast('✅ Booking successfully update ho gayi!');
+}
+
+
 
 function confirmDelete(){
   const p=document.getElementById('deletePassInput').value;
@@ -1868,12 +2365,12 @@ function confirmDeleteBooking(){confirmDelete();}
 
 // ── Room Transfer Functions ────────────────────────────────────
 const ROOM_TYPES={
-  201:'3 Bed',202:'3 Bed',203:'3 Bed',204:'3 Bed',205:'3 Bed',206:'3 Bed',207:'2 Bed',
-  301:'3 Bed',302:'3 Bed',303:'3 Bed',304:'3 Bed',305:'3 Bed',306:'3 Bed',307:'3 Bed',308:'2 Bed'
+  201:'2 Bed',202:'2 Bed',203:'3 Bed',204:'4 Bed',205:'2 Bed',206:'2 Bed',207:'2 Bed',
+  301:'2 Bed',302:'2 Bed',303:'3 Bed',304:'2 Bed',305:'2 Bed',306:'2 Bed',307:'2 Bed',308:'5 Bed'
 };
 
 function openTransferModal(r){
-  if(currentRole!=='admin'){showToast('Sirf Admin room transfer kar sakta hai','red');return;}
+  if(!canEdit()){showToast('Sirf Owner/Admin room transfer kar sakta hai','red');return;}
   const d=roomData[r];
   if(!d||!d.customer){showToast('Is room mein koi guest nahi hai','red');return;}
   // Available rooms list (same room bhi allow — price change ke liye)
@@ -1949,7 +2446,7 @@ function updateTransferPreview(fromRoom){
 }
 
 function doRoomTransfer(fromRoom){
-  if(currentRole!=='admin'){showToast('Sirf Admin transfer kar sakta hai','red');return;}
+  if(!canEdit()){showToast('Sirf Owner/Admin transfer kar sakta hai','red');return;}
   const d=roomData[fromRoom];
   const toRoom=parseInt(document.getElementById('tr-toRoom')?.value||'0');
   const newPrice=parseFloat(document.getElementById('tr-newPrice')?.value)||0;
@@ -2044,7 +2541,7 @@ function renderTransferTable(){
   let rows=transfers;
   if(filter==='today')rows=transfers.filter(t=>t.transferDate&&t.transferDate.startsWith(today));
   else if(filter==='thismonth')rows=transfers.filter(t=>t.transferDate&&t.transferDate.startsWith(thisMonth));
-  const isAdmin=currentRole==='admin';
+  const isAdmin=isOwner();
   const tbody=document.getElementById('transferTbody');
   if(!tbody)return;
   if(!rows.length){
@@ -2071,7 +2568,7 @@ function renderTransferTable(){
 }
 
 function promptDeleteTransfer(id){
-  if(currentRole!=='admin'){showToast('Sirf Admin delete kar sakta hai','red');return;}
+  if(!isOwner()){showToast('Sirf Owner delete kar sakta hai','red');return;}
   pendingDeleteTransferId=id;
   pendingDeleteIndex=null;
   pendingDeleteExpId=null;
@@ -2082,17 +2579,7 @@ function promptDeleteTransfer(id){
   document.getElementById('deletePassOverlay').classList.add('show');
   setTimeout(()=>document.getElementById('deletePassInput').focus(),100);
 }
-function clearAllData(){
-  if(currentRole!=='admin'){showToast('Sirf Admin yeh kar sakta hai','red');return;}
-  const p=document.getElementById('clearAllPass')?.value||'';
-  const adminPwd=getPwd('admin','peacock835');
-  if(p!==adminPwd){
-    document.getElementById('clearAllErr').style.display='block';
-    document.getElementById('clearAllPass').value='';
-    return;
-  }
-  document.getElementById('clearAllErr').style.display='none';
-  document.getElementById('clearAllPass').value='';
+function clearAllDataCore(){
   // Reset local state first (expenses was incorrectly set to {} before — fixed to [])
   bookings=[];
   customers={};
@@ -2121,14 +2608,47 @@ function clearAllData(){
     showToast('⚠️ Firebase clear fail hua — internet check karo aur dobara try karo','red');
   });
 }
+function clearAllData(){
+  if(!isOwner()){showToast('Sirf Owner yeh kar sakta hai','red');return;}
+  const p=document.getElementById('clearAllPass')?.value||'';
+  const ownerPwd=getPwd('owner','peacock835');
+  if(p!==ownerPwd){
+    document.getElementById('clearAllErr').style.display='block';
+    document.getElementById('clearAllPass').value='';
+    return;
+  }
+  document.getElementById('clearAllErr').style.display='none';
+  document.getElementById('clearAllPass').value='';
+  clearAllDataCore();
+}
+function clearAllDataFromDashboard(){
+  if(!isOwner()){showToast('Sirf Owner yeh kar sakta hai','red');return;}
+  if(!confirm('⚠️ Yeh saari bookings, customers, expenses aur room history PERMANENTLY delete kar dega — Firebase aur local dono se. Wapas nahi ho sakta. Aage badhe?'))return;
+  const p=prompt('Confirm karne ke liye Owner password daalo:');
+  if(p===null)return;
+  const ownerPwd=getPwd('owner','peacock835');
+  if(p!==ownerPwd){showToast('Galat password!','red');return;}
+  clearAllDataCore();
+}
 
 // ── Password Change ───────────────────────────────────────────
 function changePassword(type){
-  if(type==='admin'){
+  const ownerPwd=getPwd('owner','peacock835');
+  if(type==='owner'){
+    const old=document.getElementById('chg-old-owner').value;
+    const nw=document.getElementById('chg-new-owner').value;
+    const cf=document.getElementById('chg-confirm-owner').value;
+    if(old!==ownerPwd){showToast('Current password galat hai','red');return;}
+    if(!nw||nw.length<4){showToast('Naya password kam se kam 4 characters ka hona chahiye','red');return;}
+    if(nw!==cf){showToast('Passwords match nahi karte','red');return;}
+    setPwd('owner',nw);
+    document.getElementById('chg-old-owner').value='';document.getElementById('chg-new-owner').value='';document.getElementById('chg-confirm-owner').value='';
+    showToast('Owner password update ho gaya!');
+  }else if(type==='admin'){
     const old=document.getElementById('chg-old-admin').value;
     const nw=document.getElementById('chg-new-admin').value;
     const cf=document.getElementById('chg-confirm-admin').value;
-    if(old!==getPwd('admin','peacock835')){showToast('Current password galat hai','red');return;}
+    if(old!==ownerPwd){showToast('Owner password galat hai','red');return;}
     if(!nw||nw.length<4){showToast('Naya password kam se kam 4 characters ka hona chahiye','red');return;}
     if(nw!==cf){showToast('Passwords match nahi karte','red');return;}
     setPwd('admin',nw);
@@ -2138,7 +2658,7 @@ function changePassword(type){
     const old=document.getElementById('chg-old-view').value;
     const nw=document.getElementById('chg-new-view').value;
     const cf=document.getElementById('chg-confirm-view').value;
-    if(old!==getPwd('admin','peacock835')){showToast('Admin password galat hai','red');return;}
+    if(old!==ownerPwd){showToast('Owner password galat hai','red');return;}
     if(!nw||nw.length<4){showToast('Naya password kam se kam 4 characters ka hona chahiye','red');return;}
     if(nw!==cf){showToast('Passwords match nahi karte','red');return;}
     setPwd('view',nw);
@@ -2148,7 +2668,7 @@ function changePassword(type){
     const old=document.getElementById('chg-old-del').value;
     const nw=document.getElementById('chg-new-del').value;
     const cf=document.getElementById('chg-confirm-del').value;
-    if(old!==getPwd('admin','peacock835')){showToast('Admin password galat hai','red');return;}
+    if(old!==ownerPwd){showToast('Owner password galat hai','red');return;}
     if(!nw||nw.length<4){showToast('Naya password kam se kam 4 characters ka hona chahiye','red');return;}
     if(nw!==cf){showToast('Passwords match nahi karte','red');return;}
     setPwd('delete',nw);
@@ -2157,7 +2677,250 @@ function changePassword(type){
   }
 }
 
-// ── Guest Tab Switching ─────────────────────────────────────
+// ── Edit History (track all booking edits) ────────────────────
+let editHistory=[];
+
+// ── Switch between Data Change sub-tabs ──────────────────────
+function switchDataTab(tab){
+  const tabs=['transfers','edithistory','expedithistory'];
+  tabs.forEach(t=>{
+    document.getElementById('dtab-panel-'+t).style.display=t===tab?'':'none';
+    const btn=document.getElementById('dtab-'+t);
+    if(btn){
+      btn.style.color=t===tab?'var(--rm-accent)':'var(--rm-muted)';
+      btn.style.borderBottomColor=t===tab?'var(--rm-accent)':'transparent';
+    }
+  });
+  if(tab==='transfers')renderTransferTable();
+  if(tab==='edithistory')renderEditHistory();
+  if(tab==='expedithistory')renderExpenseEditHistory();
+}
+
+// ── Render Edit History table ─────────────────────────────────
+function renderEditHistory(){
+  const filter=document.getElementById('editHistFilter')?.value||'all';
+  const today=new Date().toISOString().split('T')[0];
+  const thisMonth=today.slice(0,7);
+  let rows=editHistory;
+  if(filter==='today')rows=editHistory.filter(e=>e.editDate&&e.editDate.startsWith(today));
+  else if(filter==='thismonth')rows=editHistory.filter(e=>e.editDate&&e.editDate.startsWith(thisMonth));
+  const tbody=document.getElementById('editHistTbody');
+  if(!tbody)return;
+  if(!rows.length){
+    tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;color:var(--rm-muted);padding:20px"><i class="ti ti-edit"></i> Koi edit record nahi mila</td></tr>`;
+    return;
+  }
+  tbody.innerHTML=rows.slice().reverse().map(e=>`<tr>
+    <td style="font-size:11px">${fmtDT(e.editDate)}</td>
+    <td><b>${e.room}</b></td>
+    <td>${e.customer}</td>
+    <td>${e.mobile}</td>
+    <td style="font-size:11px;color:var(--rm-muted);max-width:200px">${e.changes||'—'}</td>
+    <td><span style="font-size:10px;padding:2px 7px;border-radius:12px;background:rgba(212,160,23,.12);color:var(--rm-accent)">${e.editedBy||'Admin'}</span></td>
+  </tr>`).join('');
+}
+
+// ── Render Expense Edit History table ─────────────────────────
+function renderExpenseEditHistory(){
+  const filter=document.getElementById('expEditHistFilter')?.value||'all';
+  const today=new Date().toISOString().split('T')[0];
+  const thisMonth=today.slice(0,7);
+  let rows=expenseEditHistory;
+  if(filter==='today')rows=expenseEditHistory.filter(e=>e.editDate&&e.editDate.startsWith(today));
+  else if(filter==='thismonth')rows=expenseEditHistory.filter(e=>e.editDate&&e.editDate.startsWith(thisMonth));
+  const tbody=document.getElementById('expEditHistTbody');
+  if(!tbody)return;
+  if(!rows.length){
+    tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;color:var(--rm-muted);padding:20px"><i class="ti ti-receipt-2"></i> Koi expense edit record nahi mila</td></tr>`;
+    return;
+  }
+  tbody.innerHTML=rows.slice().reverse().map(e=>`<tr>
+    <td style="font-size:11px">${fmtDT(e.editDate)}</td>
+    <td>${e.expenseDate||'—'}</td>
+    <td>${e.category||'—'}</td>
+    <td style="color:var(--rm-muted)">${e.item||'—'}</td>
+    <td style="font-size:11px;color:var(--rm-muted);max-width:220px">${e.changes||'—'}</td>
+    <td><span style="font-size:10px;padding:2px 7px;border-radius:12px;background:rgba(212,160,23,.12);color:var(--rm-accent)">${e.editedBy||'Admin'}</span></td>
+  </tr>`).join('');
+}
+
+// ── Direct Entry (add booking without check-in flow) ──────────
+function addDirectEntry(){
+  if(!canEdit()){showToast('Sirf Owner/Admin direct entry add kar sakta hai','red');return;}
+  const room=parseInt(document.getElementById('de-room')?.value)||0;
+  const name=document.getElementById('de-name')?.value.trim()||'';
+  const mobile=document.getElementById('de-mobile')?.value.trim()||'';
+  const checkin=document.getElementById('de-checkin')?.value||'';
+  const checkout=document.getElementById('de-checkout')?.value||'';
+  const price=parseFloat(document.getElementById('de-price')?.value)||0;
+  const paymode=document.getElementById('de-paymode')?.value||'';
+  const paid=parseFloat(document.getElementById('de-paid')?.value)||0;
+  const status=document.getElementById('de-status')?.value||'active';
+  if(!room||!name||!mobile){showToast('Room, Name aur Mobile required hai','red');return;}
+  if(!/^\d{10}$/.test(mobile)){showToast('10-digit mobile number enter karo','red');return;}
+  if(!price||price<=0){showToast('Price enter karo','red');return;}
+  const ciISO=checkin?new Date(checkin).toISOString().slice(0,16):new Date().toISOString().slice(0,16);
+  const coISO=checkout?new Date(checkout).toISOString().slice(0,16):null;
+  const initPays=paymode&&paid>0?[{mode:paymode,amount:paid,time:ciISO}]:[];
+  const newBooking={
+    room,customer:name,mobile,price,
+    checkin:ciISO,
+    checkout:coISO,
+    status:coISO?'checked-out':status,
+    paymentMode:paymode||'',
+    payments:initPays,
+    totalPaid:paid,
+    id:'',
+    _directEntry:true
+  };
+  bookings.push(newBooking);
+  // Update roomData only if active and room is available / same customer
+  if(newBooking.status==='active'){
+    roomData[room]={status:'occupied',customer:name,mobile,price,checkin:ciISO,id:'',payments:initPays,totalPaid:paid};
+  }
+  if(!customers[mobile])customers[mobile]={name,mobile,id:'',bookings:[]};
+  customers[mobile].bookings.push({room,checkin:ciISO,price,status:newBooking.status});
+  // Clear fields
+  document.getElementById('de-name').value='';
+  document.getElementById('de-mobile').value='';
+  document.getElementById('de-price').value='';
+  document.getElementById('de-paid').value='';
+  document.getElementById('de-paymode').value='';
+  document.getElementById('de-checkout').value='';
+  saveData();renderAll();
+  showToast(`✅ Direct entry add ho gayi — Room ${room}, ${name}`);
+}
+
+
+// Load edit history from localStorage
+try{const eh=localStorage.getItem('hms_editHistory');if(eh)editHistory=JSON.parse(eh);}catch(e){}
+// Load expense edit history from localStorage
+try{const eeh=localStorage.getItem('hms_expenseEditHistory');if(eeh)expenseEditHistory=JSON.parse(eeh);}catch(e){}
+
+// ── Custom Minute Picker (0,5,10,...,55) ──────────────────────
+// Adds a small dropdown below any datetime-local input showing only 5-min intervals
+
+(function(){
+  const MINS=[0,5,10,15,20,25,30,35,40,45,50,55];
+
+  // Create picker popup element
+  const picker=document.createElement('div');
+  picker.id='minPickerPopup';
+  picker.style.cssText='display:none;position:fixed;z-index:9999;background:#fff;border:1.5px solid var(--rm-accent);border-radius:10px;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.18);width:220px';
+
+  const label=document.createElement('div');
+  label.style.cssText='font-size:10px;color:var(--rm-muted);font-weight:600;padding:2px 6px 6px;letter-spacing:.5px;text-transform:uppercase';
+  label.textContent='Minutes select karo';
+  picker.appendChild(label);
+
+  const grid=document.createElement('div');
+  grid.style.cssText='display:grid;grid-template-columns:repeat(6,1fr);gap:4px';
+  MINS.forEach(m=>{
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.textContent=String(m).padStart(2,'0');
+    btn.dataset.min=m;
+    btn.style.cssText='border:1px solid var(--rm-border);border-radius:6px;padding:5px 2px;font-size:12px;cursor:pointer;background:var(--rm-bg);color:var(--rm-text);font-family:inherit;font-weight:500;transition:.1s';
+    btn.onmouseenter=()=>btn.style.background='rgba(212,160,23,.15)';
+    btn.onmouseleave=()=>{btn.style.background=btn.dataset.active?'var(--rm-accent)':'var(--rm-bg)';btn.style.color=btn.dataset.active?'#fff':'var(--rm-text)';};
+    grid.appendChild(btn);
+  });
+  picker.appendChild(grid);
+  document.body.appendChild(picker);
+
+  let activeInput=null;
+
+  function showPicker(input){
+    activeInput=input;
+    // Highlight current minute
+    const cur=getCurrentMin(input);
+    grid.querySelectorAll('button').forEach(btn=>{
+      const sel=parseInt(btn.dataset.min)===cur;
+      btn.dataset.active=sel?'1':'';
+      btn.style.background=sel?'var(--rm-accent)':'var(--rm-bg)';
+      btn.style.color=sel?'#fff':'var(--rm-text)';
+    });
+    // Position below input
+    const rect=input.getBoundingClientRect();
+    picker.style.display='block';
+    let top=rect.bottom+6;
+    let left=rect.left;
+    // Prevent going off screen
+    if(left+220>window.innerWidth)left=window.innerWidth-228;
+    if(top+180>window.innerHeight)top=rect.top-186;
+    picker.style.top=top+'px';
+    picker.style.left=left+'px';
+  }
+
+  function hidePicker(){
+    picker.style.display='none';
+    activeInput=null;
+  }
+
+  function getCurrentMin(input){
+    if(!input.value)return 0;
+    const t=input.value.split('T')[1]||'';
+    return parseInt(t.split(':')[1])||0;
+  }
+
+  function applyMin(m){
+    if(!activeInput)return;
+    let val=activeInput.value;
+    if(!val){
+      // If empty, use current date+time
+      const now=new Date();
+      now.setMinutes(now.getMinutes()-now.getTimezoneOffset());
+      val=now.toISOString().slice(0,16);
+    }
+    const parts=val.split('T');
+    if(parts.length<2){hidePicker();return;}
+    const hp=parts[1].split(':')[0]||'00';
+    activeInput.value=parts[0]+'T'+hp+':'+String(m).padStart(2,'0');
+    activeInput.dispatchEvent(new Event('change',{bubbles:true}));
+    activeInput.dispatchEvent(new Event('input',{bubbles:true}));
+    hidePicker();
+  }
+
+  // Button clicks
+  grid.addEventListener('click',function(e){
+    const btn=e.target.closest('button[data-min]');
+    if(btn)applyMin(parseInt(btn.dataset.min));
+  });
+
+  // Show picker when user clicks on the minute part of datetime-local
+  // We attach to all datetime-local inputs via delegation on focus
+  document.addEventListener('click',function(e){
+    if(e.target&&e.target.type==='datetime-local'){
+      showPicker(e.target);
+    } else if(!picker.contains(e.target)){
+      hidePicker();
+    }
+  });
+
+  document.addEventListener('focus',function(e){
+    if(e.target&&e.target.type==='datetime-local'){
+      showPicker(e.target);
+    }
+  },true);
+
+  // Also snap on change/blur (fallback)
+  document.addEventListener('change',function(e){
+    if(e.target&&e.target.type==='datetime-local'){
+      // Snap to nearest 5
+      const val=e.target.value;
+      if(!val)return;
+      const parts=val.split('T');
+      if(parts.length<2)return;
+      const tp=parts[1].split(':');
+      let m=parseInt(tp[1])||0;
+      m=Math.round(m/5)*5;if(m>=60)m=55;
+      tp[1]=String(m).padStart(2,'0');
+      e.target.value=parts[0]+'T'+tp[0]+':'+tp[1];
+      e.target.dispatchEvent(new Event('input',{bubbles:true}));
+    }
+  });
+})();
+
 function switchGuestTab(tab){
   document.getElementById('guestTab-customers').style.display=tab==='customers'?'':'none';
   document.getElementById('guestTab-history').style.display=tab==='history'?'':'none';
