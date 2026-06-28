@@ -520,7 +520,7 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
           <select class="filter-select" id="revMonthFilter" onchange="onRevFilterChange()">
             <option value="all">All Time</option>
             <option value="today">Today</option>
-            <option value="thismonth">This Month</option>
+            <option value="thismonth" selected>This Month</option>
             <option value="pickmonth">Month Select...</option>
           </select>
           <input type="month" class="filter-select" id="revMonthPicker" style="display:none;max-width:150px" onchange="renderRevStats()">
@@ -1360,7 +1360,11 @@ function renderRevStats(){
   const hotelzify=amtByMode('Hotel Zify');
   const others=amtByMode('Others');
 
-  const totalExp=expenses.reduce((s,e)=>s+e.amount,0);
+  let filteredExp=expenses;
+  if(filter==='today')filteredExp=expenses.filter(e=>e.date===today);
+  else if(filter==='thismonth')filteredExp=expenses.filter(e=>e.date&&e.date.startsWith(thisMonth));
+  else if(filter==='pickmonth'){const pm=document.getElementById('revMonthPicker')?.value||'';if(pm)filteredExp=expenses.filter(e=>e.date&&e.date.startsWith(pm));}
+  const totalExp=filteredExp.reduce((s,e)=>s+e.amount,0);
   const net=done-totalExp;
 
   // stat card helper — hamesha dikhega chahe 0 ho
@@ -1447,11 +1451,7 @@ function renderRevStats(){
         const dateStr=`${dailyMonth}-${String(day).padStart(2,'0')}`;
         chartLabels.push(String(day));
         const dayRev=bookings.filter(b=>b.status==='checked-out'&&b.checkout&&b.checkout.startsWith(dateStr))
-          .reduce((s,b)=>{
-            const ci=new Date(b.checkin),co=new Date(b.checkout);
-            const nights=Math.max(1,Math.round((co-ci)/(1000*60*60*24)));
-            return s+(b.price*nights);
-          },0);
+          .reduce((s,b)=>s+b.price,0);
         const dayExp=expenses.filter(e=>e.date===dateStr).reduce((s,e)=>s+e.amount,0);
         chartRevs.push(dayRev);
         chartExps.push(dayExp);
@@ -1466,11 +1466,7 @@ function renderRevStats(){
         const ym=d.toISOString().slice(0,7);
         chartLabels.push(d.toLocaleString('en-IN',{month:'short',year:'2-digit'}));
         const mRev=bookings.filter(b=>b.status==='checked-out'&&b.checkout&&b.checkout.startsWith(ym))
-          .reduce((s,b)=>{
-            const ci=new Date(b.checkin),co=new Date(b.checkout);
-            const nights=Math.max(1,Math.round((co-ci)/(1000*60*60*24)));
-            return s+(b.price*nights);
-          },0);
+          .reduce((s,b)=>s+b.price,0);
         const mExp=expenses.filter(e=>e.date&&e.date.startsWith(ym)).reduce((s,e)=>s+e.amount,0);
         chartRevs.push(mRev);
         chartExps.push(mExp);
