@@ -228,7 +228,7 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
     <button class="login-btn" id="loginBtn" onclick="doLogin()"><i class="ti ti-login"></i> &nbsp;Sign In</button>
     <div id="fbStatus" style="text-align:center;font-size:11px;color:#767b88;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:6px">
       <span id="fbDot" style="width:8px;height:8px;border-radius:50%;background:#d9a83a;display:inline-block;animation:pulse 1.2s infinite"></span>
-      <span id="fbStatusText">Firebase se connect ho raha hai...</span>
+      <span id="fbStatusText">Connecting to Firebase...</span>
     </div>
     <div class="login-err" id="loginErr">Incorrect username or password. Please try again.</div>
     <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}</style>
@@ -341,7 +341,7 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
             <div class="form-group">
               <label class="form-label">Payment Mode</label>
               <select class="form-input" id="ci-pay-mode">
-                <option value="">-- Koi nahi --</option>
+                <option value="">-- None --</option>
                 <option value="Cash">Cash</option>
                 <option value="UPI">UPI</option>
                 <option value="PhonePe">PhonePe</option>
@@ -386,12 +386,12 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
 
       <!-- Direct Entry Panel (Admin only) -->
       <div id="directEntryPanel" style="background:var(--rm-card);border:1.5px solid rgba(212,160,23,.35);border-radius:12px;padding:16px;margin-bottom:16px">
-        <div style="font-size:13px;font-weight:500;color:var(--rm-accent);margin-bottom:12px"><i class="ti ti-pencil-plus"></i> Direct Entry — Bina Check-in ke booking add karo</div>
+        <div style="font-size:13px;font-weight:500;color:var(--rm-accent);margin-bottom:12px"><i class="ti ti-pencil-plus"></i> Direct Entry — Add booking without Check-in</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;align-items:end">
           <div class="form-group" style="margin-bottom:0">
             <label class="form-label">Room No. *</label>
             <select class="form-input" id="de-room">
-              <option value="">-- Room Select Karo --</option>
+              <option value="">-- Select Room --</option>
             </select>
           </div>
           <div class="form-group" style="margin-bottom:0">
@@ -417,7 +417,7 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
           <div class="form-group" style="margin-bottom:0">
             <label class="form-label">Payment Mode</label>
             <select class="form-input" id="de-paymode">
-              <option value="">-- Koi nahi --</option>
+              <option value="">-- None --</option>
               <option value="Cash">Cash</option>
               <option value="UPI">UPI</option>
               <option value="PhonePe">PhonePe</option>
@@ -503,11 +503,11 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
         </div>
 
         <div style="background:var(--rm-card);border:1.5px solid rgba(220,38,38,.35);border-radius:12px;padding:20px">
-          <div style="font-size:13px;font-weight:500;color:var(--rm-red);margin-bottom:6px"><i class="ti ti-trash"></i> Saara Data Clear Karo</div>
-          <div style="font-size:11px;color:var(--rm-muted);margin-bottom:14px">Yeh action saari bookings, room history, customers aur expenses permanently delete karega — Firebase aur local dono se. Wapas nahi ho sakta!</div>
-          <div class="form-group"><label class="form-label">Owner Password (confirm karne ke liye)</label><input class="form-input" id="clearAllPass" type="password" placeholder="Owner password daalo"></div>
-          <div id="clearAllErr" style="display:none;font-size:11px;color:var(--rm-red);margin-bottom:8px"><i class="ti ti-alert-circle"></i> Galat password!</div>
-          <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,#dc2626,#b91c1c)" onclick="clearAllData()"><i class="ti ti-trash"></i> Haan, Saara Data Delete Karo</button>
+          <div style="font-size:13px;font-weight:500;color:var(--rm-red);margin-bottom:6px"><i class="ti ti-trash"></i> Clear All Data</div>
+          <div style="font-size:11px;color:var(--rm-muted);margin-bottom:14px">This action will permanently delete all bookings, room history, customers and expenses — from both Firebase and local. This cannot be undone!</div>
+          <div class="form-group"><label class="form-label">Owner Password (to confirm)</label><input class="form-input" id="clearAllPass" type="password" placeholder="Enter owner password"></div>
+          <div id="clearAllErr" style="display:none;font-size:11px;color:var(--rm-red);margin-bottom:8px"><i class="ti ti-alert-circle"></i> Wrong password!</div>
+          <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,#dc2626,#b91c1c)" onclick="clearAllData()"><i class="ti ti-trash"></i> Yes, Delete All Data</button>
         </div>
 
       </div>
@@ -578,7 +578,7 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
           </div>
           <div class="form-group" id="exp-item-group" style="display:none">
             <label class="form-label">Item Name *</label>
-            <input class="form-input" id="exp-item" placeholder="Item ka naam likho">
+            <input class="form-input" id="exp-item" placeholder="Enter item name">
           </div>
           <div class="form-group">
             <label class="form-label">Amount (₹) *</label>
@@ -710,9 +710,9 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
 <div class="overlay" id="editBookingPassOverlay">
   <div class="modal" style="width:360px;max-width:95vw">
     <div class="modal-title"><i class="ti ti-shield-lock" style="color:var(--rm-accent)"></i> &nbsp;Edit Password<button class="modal-close" onclick="closeOverlay('editBookingPassOverlay')"><i class="ti ti-x"></i></button></div>
-    <div style="font-size:12px;color:var(--rm-muted);margin-bottom:14px">Booking edit karne ke liye Owner ya Admin password enter karo.</div>
+    <div style="font-size:12px;color:var(--rm-muted);margin-bottom:14px">Enter Owner or Admin password to edit booking.</div>
     <div class="form-group"><label class="form-label">Owner / Admin Password</label><input class="form-input" id="editBookingPassInput" type="password" placeholder="Enter password" onkeydown="if(event.key==='Enter')confirmEditBookingPass()"></div>
-    <div id="editBookingPassErr" style="display:none;font-size:11px;color:var(--rm-red);margin-bottom:8px"><i class="ti ti-alert-circle"></i> Galat password!</div>
+    <div id="editBookingPassErr" style="display:none;font-size:11px;color:var(--rm-red);margin-bottom:8px"><i class="ti ti-alert-circle"></i> Wrong password!</div>
     <button class="btn btn-primary" style="width:100%" onclick="confirmEditBookingPass()"><i class="ti ti-lock-open"></i> Verify & Edit</button>
   </div>
 </div>
@@ -736,9 +736,9 @@ textarea.form-input{resize:vertical;min-height:46px;font-family:inherit}
 <div class="overlay" id="deletePassOverlay">
   <div class="modal" style="width:360px;max-width:95vw">
     <div class="modal-title"><i class="ti ti-shield-lock" style="color:var(--rm-red)"></i> &nbsp;Delete Confirmation<button class="modal-close" onclick="closeOverlay('deletePassOverlay')"><i class="ti ti-x"></i></button></div>
-    <div id="deletePassDesc" style="font-size:12px;color:var(--rm-muted);margin-bottom:14px">Yeh record permanently delete ho jaayega. Aage badhne ke liye delete password enter karo.</div>
+    <div id="deletePassDesc" style="font-size:12px;color:var(--rm-muted);margin-bottom:14px">This record will be permanently deleted. Enter delete password to proceed.</div>
     <div class="form-group"><label class="form-label">Delete Password</label><input class="form-input" id="deletePassInput" type="password" placeholder="Enter delete password" onkeydown="if(event.key==='Enter')confirmDelete()"></div>
-    <div id="deletePassErr" style="display:none;font-size:11px;color:var(--rm-red);margin-bottom:8px"><i class="ti ti-alert-circle"></i> Galat password!</div>
+    <div id="deletePassErr" style="display:none;font-size:11px;color:var(--rm-red);margin-bottom:8px"><i class="ti ti-alert-circle"></i> Wrong password!</div>
     <button class="btn btn-primary" id="deletePassBtn" style="width:100%;background:linear-gradient(135deg,#dc2626,#b91c1c)" onclick="confirmDelete()"><i class="ti ti-trash"></i> Delete</button>
   </div>
 </div>
@@ -785,7 +785,7 @@ connRef.on('value',snap=>{
     }else{
       dot.style.background='#dc2626';
       dot.style.animation='pulse 1.2s infinite';
-      txt.textContent='Firebase se connect nahi hua — internet check karo';
+      txt.textContent='Could not connect to Firebase — check your internet';
       txt.style.color='#dc2626';
     }
   }
@@ -822,17 +822,17 @@ function loadLocalCache(){
   }catch(e){console.warn('Local cache load failed',e);}
 }
 
-// Restart: ab sirf checkout-clearing rooms ko available karo (manual release ke liye kuch nahi chahiye)
+// Restart: make only checkout-clearing rooms available (nothing needed for manual release)
 function restartCheckoutTimers(){
   ROOMS.forEach(r=>{
     const d=roomData[r];
     if(!d)return;
-    // Agar koi room 'checkout' state mein tha (yellow phase) — seedha clearing mein le aao
+    // If any room was in 'checkout' state (yellow phase) — move directly to clearing
     if(d.status==='checkout'){
       roomData[r].status='checkout-clearing';
       roomData[r]._clearTime=Date.now();
     }
-    // checkout-clearing: kuch timer nahi — staff manually Release karega
+    // checkout-clearing: no timer — staff will manually Release
   });
 }
 
@@ -940,14 +940,14 @@ function populateRoomSelect(){
   const deRoom=document.getElementById('de-room');
   if(deRoom){
     const cur=deRoom.value;
-    deRoom.innerHTML='<option value="">-- Room Select Karo --</option>'+ROOMS.map(r=>`<option value="${r}">Room ${r} (${ROOM_TYPES[r]||''})</option>`).join('');
+    deRoom.innerHTML='<option value="">-- Select Room --</option>'+ROOMS.map(r=>`<option value="${r}">Room ${r} (${ROOM_TYPES[r]||''})</option>`).join('');
     if(cur)deRoom.value=cur;
   }
 }
 
 function fmtDT(s){if(!s)return'';const d=new Date(s);return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short'})+' '+d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});}
 
-function goCheckin(r){if(!canEdit()){showToast('Sirf Owner/Admin check-in kar sakta hai','red');return;}showSection('checkin');setTimeout(()=>{document.getElementById('ci-room').value=r;},50);}
+function goCheckin(r){if(!canEdit()){showToast('Only Owner/Admin can check-in','red');return;}showSection('checkin');setTimeout(()=>{document.getElementById('ci-room').value=r;},50);}
 
 function paymentRowHTML(idx){
   const POPTS=`<option value="Cash">Cash</option><option value="UPI">UPI</option><option value="PhonePe">PhonePe</option><option value="Google Pay">Google Pay</option><option value="Card">Card</option><option value="Net Banking">Net Banking</option><optgroup label="── Online Booking ──"><option value="MakeMyTrip">MakeMyTrip (MMT)</option><option value="Agoda">Agoda</option><option value="Booking.com">Booking.com</option><option value="Cleartrip">Cleartrip</option><option value="Bravistay">Bravistay</option><option value="Hotel Zify">Hotel Zify</option><option value="Others">Others</option></optgroup>`;
@@ -994,7 +994,7 @@ function getTransferSegments(r){
 }
 
 function openCheckoutModal(r){
-  if(!canEdit()){showToast('Sirf Owner/Admin checkout kar sakta hai','red');return;}
+  if(!canEdit()){showToast('Only Owner/Admin can checkout','red');return;}
   const d=roomData[r];
   const existPays=d.payments||[];
   const paidSoFar=existPays.reduce((s,p)=>s+p.amount,0);
@@ -1008,7 +1008,7 @@ function openCheckoutModal(r){
   let transferSegTotal=0;
   if(hasTransfer){
     transferSegHTML=`<div style="background:rgba(111,179,224,.08);border:1px solid rgba(111,179,224,.3);border-radius:8px;padding:10px;margin-bottom:10px;font-size:12px">
-      <div style="font-weight:600;color:#2c6ea3;margin-bottom:8px"><i class="ti ti-arrows-exchange"></i> Purani Rooms ka Hisaab (Transfer History)</div>`;
+      <div style="font-weight:600;color:#2c6ea3;margin-bottom:8px"><i class="ti ti-arrows-exchange"></i> Previous Rooms Summary (Transfer History)</div>`;
     segments.forEach(seg=>{
       const ci=new Date(seg.checkin);
       const co=new Date(seg.checkout);
@@ -1021,7 +1021,7 @@ function openCheckoutModal(r){
       </div>`;
     });
     transferSegHTML+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-weight:600;color:#2c6ea3;margin-top:4px">
-        <span>Purani Rooms Subtotal</span><span>₹${transferSegTotal.toLocaleString('en-IN')}</span>
+        <span>Previous Rooms Subtotal</span><span>₹${transferSegTotal.toLocaleString('en-IN')}</span>
       </div></div>`;
   }
 
@@ -1036,7 +1036,7 @@ function openCheckoutModal(r){
       <div class="summary-row"><span>Customer</span><span><b>${d.customer}</b></span></div>
       <div class="summary-row"><span>Mobile</span><span>${d.mobile}</span></div>
       <div class="summary-row"><span>Original Check-in</span><span>${fmtDT(firstCheckin)}</span></div>
-      ${hasTransfer?`<div class="summary-row"><span>Current Room</span><span>Room <b>${r}</b> (Transfer ke baad, ${fmtDT(d.checkin)} se)</span></div>`:''}
+      ${hasTransfer?`<div class="summary-row"><span>Current Room</span><span>Room <b>${r}</b> (After transfer, since ${fmtDT(d.checkin)} se)</span></div>`:''}
       <div class="summary-row" style="align-items:center">
         <span>Check-out Date & Time</span>
         <span><input type="datetime-local" id="co-checkout-dt" class="form-input" style="font-size:11px;padding:4px 8px;width:auto" value="${nowLocal}" oninput="recalcCheckoutBill(${r})"></span>
@@ -1058,7 +1058,7 @@ function openCheckoutModal(r){
         </div>
         <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed var(--rm-border)"><span>Early Charge</span><span id="co-bd-early">₹0</span></div>
         <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed var(--rm-border)"><span>Extra Charge</span><span id="co-bd-extra">₹0</span></div>
-        ${hasTransfer?`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed var(--rm-border);color:#2c6ea3"><span>Purani Rooms Subtotal</span><span id="co-bd-transfer">₹${transferSegTotal.toLocaleString('en-IN')}</span></div>`:''}
+        ${hasTransfer?`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed var(--rm-border);color:#2c6ea3"><span>Previous Rooms Subtotal</span><span id="co-bd-transfer">₹${transferSegTotal.toLocaleString('en-IN')}</span></div>`:''}
         <div style="display:flex;justify-content:space-between;padding:6px 0;font-weight:700;font-size:13px;color:var(--rm-accent);margin-top:2px"><span>TOTAL BILL</span><span id="co-bd-total">₹0</span></div>
       </div>
     </div>
@@ -1067,13 +1067,13 @@ function openCheckoutModal(r){
       <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--rm-green)">Already Paid</span><span style="color:var(--rm-green);font-weight:600">₹${paidSoFar.toLocaleString('en-IN')}</span></div>
       <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:12px"><span style="color:var(--rm-red)"><b>Remaining</b></span><span id="co-remaining-amt" style="color:var(--rm-red);font-weight:600">₹${Math.max(0,(d.price||0)-paidSoFar).toLocaleString('en-IN')}</span></div>
     </div>
-    ${existPays.length>0?`<div style="background:rgba(63,166,108,.06);border:1px solid rgba(63,166,108,.2);border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px"><div style="font-weight:500;color:var(--rm-green);margin-bottom:6px"><i class="ti ti-check"></i> Pehle ki payments</div>${existPays.map(p=>`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed rgba(0,0,0,.06)"><span>${p.mode}</span><span style="color:var(--rm-green);font-weight:500">₹${p.amount.toLocaleString('en-IN')}</span></div>`).join('')}</div>`:''}
-    <div style="font-size:12px;font-weight:500;color:var(--rm-accent);margin-bottom:8px"><i class="ti ti-wallet"></i> Is baar ki payment (split bhi kar sakte ho)</div>
+    ${existPays.length>0?`<div style="background:rgba(63,166,108,.06);border:1px solid rgba(63,166,108,.2);border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px"><div style="font-weight:500;color:var(--rm-green);margin-bottom:6px"><i class="ti ti-check"></i> Previous payments</div>${existPays.map(p=>`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed rgba(0,0,0,.06)"><span>${p.mode}</span><span style="color:var(--rm-green);font-weight:500">₹${p.amount.toLocaleString('en-IN')}</span></div>`).join('')}</div>`:''}
+    <div style="font-size:12px;font-weight:500;color:var(--rm-accent);margin-bottom:8px"><i class="ti ti-wallet"></i> Current payment (can be split)</div>
     <div id="pay-rows-wrap">${paymentRowHTML(0)}</div>
-    <button onclick="addPayRow()" style="background:rgba(212,160,23,.1);color:var(--rm-accent);border:none;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;margin-bottom:12px;font-family:inherit"><i class="ti ti-plus"></i> Payment add karo</button>
+    <button onclick="addPayRow()" style="background:rgba(212,160,23,.1);color:var(--rm-accent);border:none;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;margin-bottom:12px;font-family:inherit"><i class="ti ti-plus"></i> Add payment</button>
     <div id="pay-summary" style="background:rgba(63,166,108,.08);border:1px solid rgba(63,166,108,.2);border-radius:8px;padding:10px;font-size:12px;margin-bottom:12px;display:none">
-      <div style="display:flex;justify-content:space-between"><span>Is baar pay ho raha:</span><span id="pay-now-total" style="color:var(--rm-green);font-weight:600"></span></div>
-      <div style="display:flex;justify-content:space-between;margin-top:4px"><span>Bacha hua:</span><span id="pay-balance" style="font-weight:600"></span></div>
+      <div style="display:flex;justify-content:space-between"><span>Paying now:</span><span id="pay-now-total" style="color:var(--rm-green);font-weight:600"></span></div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px"><span>Remaining:</span><span id="pay-balance" style="font-weight:600"></span></div>
     </div>
     <div class="form-group"><label class="form-label">Remarks</label><input class="form-input" id="co-note" placeholder="Optional remarks..."></div>
     <button class="btn btn-invoice" style="width:100%;margin-bottom:8px" onclick="openInvoiceForRoom(${r})"><i class="ti ti-receipt"></i> Generate Bill / Print Invoice</button>
@@ -1161,7 +1161,7 @@ function closeOverlay(id){document.getElementById(id).classList.remove('show');}
 
 
 function doCheckin(){
-  if(!canEdit()){showToast('Sirf Owner/Admin check-in kar sakta hai','red');return;}
+  if(!canEdit()){showToast('Only Owner/Admin can check-in','red');return;}
   const name=document.getElementById('ci-name').value.trim(),mob=document.getElementById('ci-mobile').value.trim();
   const idp=document.getElementById('ci-id').value.trim(),room=parseInt(document.getElementById('ci-room').value);
   const price=parseInt(document.getElementById('ci-price').value)||0,dt=document.getElementById('ci-datetime').value||new Date().toISOString().slice(0,16);
@@ -1184,7 +1184,7 @@ function doCheckin(){
 }
 
 function doCheckout(r){
-  if(!canEdit()){showToast('Sirf Owner/Admin checkout kar sakta hai','red');return;}
+  if(!canEdit()){showToast('Only Owner/Admin can checkout','red');return;}
   const d=roomData[r];
   const coEl=document.getElementById('co-checkout-dt');
   const coTime=coEl&&coEl.value?new Date(coEl.value).toISOString().slice(0,16):(new Date().toISOString().slice(0,16));
@@ -1208,11 +1208,11 @@ function doCheckout(r){
   // Seedha checkout-clearing (yellow phase hata diya) — staff manually Release karega
   roomData[r]={status:'checkout-clearing',customer:null,mobile:null,price:null,checkin:null,id:null,_clearTime:Date.now()};
   window._coGrandTotal=undefined;window._coDays=undefined;
-  saveData();closeOverlay('checkoutOverlay');renderAll();showToast(`Room ${r} checkout complete — Release karo jab ready ho`);
+  saveData();closeOverlay('checkoutOverlay');renderAll();showToast(`Room ${r} checkout complete — Release when ready`);
 }
 
 function openAddPaymentModal(r){
-  if(!canEdit()){showToast('Sirf Owner/Admin payment add kar sakta hai','red');return;}
+  if(!canEdit()){showToast('Only Owner/Admin can add payment','red');return;}
   const d=roomData[r];
   const existPays=d.payments||[];
   const paidSoFar=existPays.reduce((s,p)=>s+p.amount,0);
@@ -1227,22 +1227,22 @@ function openAddPaymentModal(r){
       <div class="summary-row"><span><b>Remaining</b></span><span style="color:var(--rm-red);font-weight:600">₹${remaining.toLocaleString('en-IN')}</span></div>
     </div>
     ${existPays.length>0?`<div style="background:rgba(63,166,108,.06);border:1px solid rgba(63,166,108,.2);border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px"><div style="font-weight:500;color:var(--rm-green);margin-bottom:6px"><i class="ti ti-history"></i> Payment History</div>${existPays.map(p=>`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed rgba(0,0,0,.06)"><span>${p.mode} <span style="color:var(--rm-muted);font-size:10px">${p.time?fmtDT(p.time):''}</span></span><span style="color:var(--rm-green);font-weight:500">₹${p.amount.toLocaleString('en-IN')}</span></div>`).join('')}</div>`:''}
-    <div style="font-size:12px;font-weight:500;color:var(--rm-accent);margin-bottom:10px"><i class="ti ti-plus"></i> Naya Payment</div>
+    <div style="font-size:12px;font-weight:500;color:var(--rm-accent);margin-bottom:10px"><i class="ti ti-plus"></i> New Payment</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
       <div class="form-group"><label class="form-label">Payment Mode</label><select class="form-input" id="mp-mode">${POPTS}</select></div>
       <div class="form-group"><label class="form-label">Amount (₹)</label><input class="form-input" id="mp-amt" type="number" placeholder="${remaining}" value="${remaining}"></div>
     </div>
     <div class="form-group"><label class="form-label">Note (optional)</label><input class="form-input" id="mp-note" placeholder="e.g. partial payment"></div>
-    <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,var(--rm-green),var(--rm-accent3))" onclick="saveAddPayment(${r})"><i class="ti ti-check"></i> Payment Save Karo</button>
+    <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,var(--rm-green),var(--rm-accent3))" onclick="saveAddPayment(${r})"><i class="ti ti-check"></i> Save Payment</button>
   `;
   document.getElementById('checkoutOverlay').classList.add('show');
 }
 
 function saveAddPayment(r){
-  if(!canEdit()){showToast('Sirf Owner/Admin payment add kar sakta hai','red');return;}
+  if(!canEdit()){showToast('Only Owner/Admin can add payment','red');return;}
   const mode=document.getElementById('mp-mode')?.value||'Cash';
   const amt=parseFloat(document.getElementById('mp-amt')?.value)||0;
-  if(amt<=0){showToast('Valid amount enter karo','red');return;}
+  if(amt<=0){showToast('Enter a valid amount','red');return;}
   const now=new Date().toISOString().slice(0,16);
   if(!roomData[r].payments)roomData[r].payments=[];
   roomData[r].payments.push({mode,amount:amt,time:now});
@@ -1252,11 +1252,11 @@ function saveAddPayment(r){
   const b=bookings.find(x=>x.room===r&&x.status==='active');
   if(b){b.payments=roomData[r].payments;b.totalPaid=totalPaid;}
   saveData();renderAll();closeOverlay('checkoutOverlay');
-  showToast(`✅ ₹${amt.toLocaleString('en-IN')} (${mode}) payment save ho gaya — Room ${r}`);
+  showToast(`✅ ₹${amt.toLocaleString('en-IN')} (${mode}) payment saved — Room ${r}`);
 }
 
-function setMaintenance(r){if(!canEdit()){showToast('Sirf Owner/Admin maintenance set kar sakta hai','red');return;}roomData[r].status='maintenance';saveData();renderAll();}
-function setAvailable(r){if(!canEdit()){showToast('Sirf Owner/Admin room release/ready kar sakta hai','red');return;}roomData[r].status='available';saveData();renderAll();}
+function setMaintenance(r){if(!canEdit()){showToast('Only Owner/Admin can set maintenance','red');return;}roomData[r].status='maintenance';saveData();renderAll();}
+function setAvailable(r){if(!canEdit()){showToast('Only Owner/Admin can release/ready a room','red');return;}roomData[r].status='available';saveData();renderAll();}
 
 function checkExisting(){
   const mob=document.getElementById('ci-mobile').value.trim(),box=document.getElementById('existingCustomerBox'),info=document.getElementById('existingCustomerInfo');
@@ -1269,7 +1269,7 @@ function checkExisting(){
 
 function renderHistoryTable(){
   const f=document.getElementById('histFilter')?.value||'all';
-  // 'transferred' status entries hide karo — wo sirf transfer segments hain, actual booking nahi
+  // Hide 'transferred' status entries — these are transfer segments only, not actual bookings
   let rows=bookings.filter(b=>{
     if(b.status==='transferred')return false;
     if(f==='all')return true;
@@ -1308,7 +1308,7 @@ function renderCustomerTable(){
 }
 
 function quickRebook(mob){
-  if(!canEdit()){showToast('Sirf Owner/Admin re-book kar sakta hai','red');return;}
+  if(!canEdit()){showToast('Only Owner/Admin can re-book','red');return;}
   const c=customers[mob];if(!c)return;
   showSection('checkin');
   setTimeout(()=>{document.getElementById('ci-name').value=c.name;document.getElementById('ci-mobile').value=c.mobile;document.getElementById('ci-id').value=c.id||'';checkExisting();},50);
@@ -1318,12 +1318,12 @@ function renderRevStats(){
   const filter=document.getElementById('revMonthFilter')?.value||'all';
   const today=new Date().toISOString().split('T')[0];
   const thisMonth=today.slice(0,7);
-  // 'transferred' segments hide karo — ye internal segments hain
+  // Hide 'transferred' segments — these are internal segments
   let filteredBookings=bookings.filter(b=>b.status!=='transferred');
   if(filter==='today')filteredBookings=filteredBookings.filter(b=>b.checkout&&b.checkout.startsWith(today));
   else if(filter==='thismonth')filteredBookings=filteredBookings.filter(b=>b.checkout&&b.checkout.startsWith(thisMonth));
 
-  // Total Revenue = sirf checked-out bookings (actually collected amount)
+  // Total Revenue = only checked-out bookings (actually collected amount)
   const done=filteredBookings.filter(b=>b.status==='checked-out').reduce((s,b)=>s+b.price,0);
   const all=done;
   const pend=filteredBookings.filter(b=>b.status==='active'||b.status==='checkout-pending').reduce((s,b)=>s+b.price,0);
@@ -1420,35 +1420,38 @@ function renderRevStats(){
     return `<tr><td><b>${b.room}</b></td><td>${b.customer}</td><td>₹${b.price.toLocaleString('en-IN')}</td><td><span style="font-size:11px;padding:2px 7px;border-radius:20px;${pmBadge(b.payments&&b.payments.length===1?b.payments[0].mode:b.paymentMode||'Cash')}">${displayMode}</span></td><td>${fmtDT(b.checkin)}</td><td>${b.checkout?fmtDT(b.checkout):'—'}</td><td><span class="badge ${b.status==='checked-out'?'badge-green':'badge-red'}">${b.status==='checked-out'?'Collected':'Pending'}</span></td></tr>`;
   }).join('');
 
-  // Revenue Chart — daily (month selected) ya monthly (12 months)
+  // Revenue Chart — daily (month selected) or monthly (12 months)
   const elRoom=document.getElementById('roomRevenueChart');
   if(elRoom&&typeof Chart!=='undefined'){
     if(roomRevenueChart){roomRevenueChart.destroy();roomRevenueChart=null;}
     const revF=document.getElementById('revMonthFilter')?.value||'all';
     const pickedMonth=document.getElementById('revMonthPicker')?.value||'';
-    const isDailyMode=revF==='pickmonth'&&pickedMonth;
+    const isDailyMode=(revF==='pickmonth'&&pickedMonth)||revF==='thismonth';
+
+    // For thismonth daily mode, determine the month string
+    const dailyMonth=revF==='thismonth'
+      ? new Date().toISOString().slice(0,7)
+      : pickedMonth;
 
     let chartLabels=[],chartRevs=[],chartExps=[];
 
     if(isDailyMode){
-      // Us month ke har din ki revenue
-      const [yr,mo]=pickedMonth.split('-').map(Number);
+      // Each day of the selected month
+      const [yr,mo]=dailyMonth.split('-').map(Number);
       const daysInMonth=new Date(yr,mo,0).getDate();
       const d=new Date(yr,mo-1,1);
       const mName=d.toLocaleString('en-IN',{month:'long',year:'numeric'});
       if(document.getElementById('revChartTitle'))
         document.getElementById('revChartTitle').innerHTML=`<i class="ti ti-chart-bar"></i> Daily Revenue — ${mName}`;
       for(let day=1;day<=daysInMonth;day++){
-        const dateStr=`${pickedMonth}-${String(day).padStart(2,'0')}`;
+        const dateStr=`${dailyMonth}-${String(day).padStart(2,'0')}`;
         chartLabels.push(String(day));
-        // Revenue: us din checkout hue bookings
         const dayRev=bookings.filter(b=>b.status==='checked-out'&&b.checkout&&b.checkout.startsWith(dateStr))
           .reduce((s,b)=>{
             const ci=new Date(b.checkin),co=new Date(b.checkout);
             const nights=Math.max(1,Math.round((co-ci)/(1000*60*60*24)));
             return s+(b.price*nights);
           },0);
-        // Expenses: us din ki
         const dayExp=expenses.filter(e=>e.date===dateStr).reduce((s,e)=>s+e.amount,0);
         chartRevs.push(dayRev);
         chartExps.push(dayExp);
@@ -1523,7 +1526,7 @@ function toggleExpItem(){
 }
 
 function addExpense(){
-  if(!canEdit()){showToast('Sirf Owner/Admin expense add kar sakta hai','red');return;}
+  if(!canEdit()){showToast('Only Owner/Admin can add expense','red');return;}
   const dateEl=document.getElementById('exp-date');
   const amtEl=document.getElementById('exp-amount');
   const catEl=document.getElementById('exp-category');
@@ -1535,9 +1538,9 @@ function addExpense(){
   const cat=catEl?catEl.value:'Miscellaneous';
   const note=noteEl?noteEl.value.trim():'';
   const item=itemEl?itemEl.value.trim():'';
-  if(!date){showToast('Date select karo','red');return;}
-  if(!amtRaw||isNaN(amount)||amount<=0){showToast('Valid amount enter karo (0 se zyada)','red');return;}
-  if(cat==='Miscellaneous'&&!item){showToast('Miscellaneous ka item naam likho','red');return;}
+  if(!date){showToast('Please select a date','red');return;}
+  if(!amtRaw||isNaN(amount)||amount<=0){showToast('Enter a valid amount (greater than 0)','red');return;}
+  if(cat==='Miscellaneous'&&!item){showToast('Enter item name for Miscellaneous','red');return;}
   expenses.push({id:Date.now(),date,category:cat,amount,note,item:cat==='Miscellaneous'?item:''});
   if(amtEl)amtEl.value='';
   if(noteEl)noteEl.value='';
@@ -1545,7 +1548,7 @@ function addExpense(){
   saveData();
   renderExpenses();
   renderRevStats();
-  showToast(`Expense add ho gaya: Rs.${amount.toLocaleString('en-IN')} - ${cat==='Miscellaneous'?item:cat}`);
+  showToast(`Expense added: Rs.${amount.toLocaleString('en-IN')} - ${cat==='Miscellaneous'?item:cat}`);
 }
 
 function deleteExpense(id){
@@ -1578,12 +1581,12 @@ function renderExpenses(){
     <td>${e.date}</td><td>${e.category}</td><td style="color:var(--rm-red);font-weight:500">₹${e.amount.toLocaleString('en-IN')}</td>
     <td style="color:var(--rm-muted)">${e.item?'<b>'+e.item+'</b>'+(e.note?' — '+e.note:''):e.note||'—'}</td>
     <td style="display:flex;gap:4px"><button class="btn" style="background:rgba(212,160,23,.12);color:var(--rm-accent)" onclick="promptEditExpense(${e.id})" title="Edit"><i class="ti ti-edit"></i></button>${isOwner()?`<button class="btn" style="background:rgba(220,38,38,.1);color:var(--rm-red)" onclick="promptDeleteExpense(${e.id})" title="Delete"><i class="ti ti-trash"></i></button>`:''}</td>
-  </tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--rm-muted);padding:20px">Koi expense nahi mila</td></tr>';
+  </tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--rm-muted);padding:20px">No expenses found</td></tr>';
 
   const viewRows=filtered.length?filtered.slice().reverse().map(e=>`<tr>
     <td>${e.date}</td><td>${e.category}</td><td style="color:var(--rm-red);font-weight:500">₹${e.amount.toLocaleString('en-IN')}</td>
     <td style="color:var(--rm-muted)">${e.item?'<b>'+e.item+'</b>'+(e.note?' — '+e.note:''):e.note||'—'}</td>
-  </tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--rm-muted);padding:20px">Koi expense nahi mila</td></tr>';
+  </tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--rm-muted);padding:20px">No expenses found</td></tr>';
 
   if(document.getElementById('expTbody'))document.getElementById('expTbody').innerHTML=adminRows;
   if(document.getElementById('expTbodyView'))document.getElementById('expTbodyView').innerHTML=viewRows;
@@ -1595,9 +1598,9 @@ let pendingEditExpenseId=null;
 const EXP_CATEGORIES=['Electricity','Staff Salary','Maintenance','Housekeeping Supplies','Food & Beverage','Laundry','Marketing','Miscellaneous'];
 
 function promptEditExpense(id){
-  if(!canEdit()){showToast('Sirf Owner/Admin expense edit kar sakta hai','red');return;}
+  if(!canEdit()){showToast('Only Owner/Admin can edit expense','red');return;}
   const exp=expenses.find(x=>x.id===id);
-  if(!exp){showToast('Expense nahi mila','red');return;}
+  if(!exp){showToast('Expense not found','red');return;}
   pendingEditExpenseId=id;
   document.getElementById('editExpenseFormContent').innerHTML=`
     <div class="form-group"><label class="form-label">Date *</label><input class="form-input" id="ee-date" type="date" value="${exp.date}"></div>
@@ -1607,7 +1610,7 @@ function promptEditExpense(id){
       </select>
     </div>
     <div class="form-group" id="ee-item-group" style="display:${exp.category==='Miscellaneous'?'block':'none'}">
-      <label class="form-label">Item Name *</label><input class="form-input" id="ee-item" value="${exp.item||''}" placeholder="Item ka naam likho">
+      <label class="form-label">Item Name *</label><input class="form-input" id="ee-item" value="${exp.item||''}" placeholder="Enter item name">
     </div>
     <div class="form-group"><label class="form-label">Amount (₹) *</label><input class="form-input" id="ee-amount" type="number" value="${exp.amount}"></div>
     <div class="form-group"><label class="form-label">Note</label><input class="form-input" id="ee-note" value="${exp.note||''}" placeholder="Optional description"></div>
@@ -1627,16 +1630,16 @@ function toggleEditExpItem(){
 
 function saveEditExpense(){
   const exp=expenses.find(x=>x.id===pendingEditExpenseId);
-  if(!exp){showToast('Expense nahi mila','red');return;}
+  if(!exp){showToast('Expense not found','red');return;}
   const snap={date:exp.date,category:exp.category,item:exp.item,amount:exp.amount,note:exp.note};
   const date=document.getElementById('ee-date').value.trim();
   const cat=document.getElementById('ee-category').value;
   const item=document.getElementById('ee-item')?.value.trim()||'';
   const amount=parseFloat(document.getElementById('ee-amount').value);
   const note=document.getElementById('ee-note').value.trim();
-  if(!date){showToast('Date select karo','red');return;}
-  if(!amount||isNaN(amount)||amount<=0){showToast('Valid amount enter karo (0 se zyada)','red');return;}
-  if(cat==='Miscellaneous'&&!item){showToast('Miscellaneous ka item naam likho','red');return;}
+  if(!date){showToast('Please select a date','red');return;}
+  if(!amount||isNaN(amount)||amount<=0){showToast('Enter a valid amount (greater than 0)','red');return;}
+  if(cat==='Miscellaneous'&&!item){showToast('Enter item name for Miscellaneous','red');return;}
   exp.date=date;
   exp.category=cat;
   exp.item=cat==='Miscellaneous'?item:'';
@@ -1666,7 +1669,7 @@ function saveEditExpense(){
   renderExpenses();
   renderRevStats();
   if(document.getElementById('dtab-panel-expedithistory'))renderExpenseEditHistory();
-  showToast('✅ Expense successfully update ho gaya!');
+  showToast('✅ Expense updated successfully!');
 }
 
 function downloadBookingHistoryCSV(){
@@ -1743,8 +1746,8 @@ function showSection(name,el){
   if(el)el.classList.add('active');
   const titles={dashboard:'Dashboard & Room Layout',checkin:'Quick Check-in',guests:'Booking History',revenue:'Revenue & Payments',expenses:'Expenses',settings:'Settings — Password Management',transfers:'Data Change'};
   document.getElementById('topbarTitle').textContent=titles[name]||name;
-  if(name==='settings'&&!isOwner()){showToast('Settings sirf Owner ke liye hai','red');showSection('dashboard',document.querySelectorAll('.nav-item')[0]);return;}
-  if(name==='transfers'&&!isOwner()){showToast('Data Change sirf Owner ke liye hai','red');showSection('dashboard',document.querySelectorAll('.nav-item')[0]);return;}
+  if(name==='settings'&&!isOwner()){showToast('Settings is for Owner only','red');showSection('dashboard',document.querySelectorAll('.nav-item')[0]);return;}
+  if(name==='transfers'&&!isOwner()){showToast('Data Change is for Owner only','red');showSection('dashboard',document.querySelectorAll('.nav-item')[0]);return;}
   document.getElementById('topbarTitle').textContent=titles[name]||name;
   if(name==='checkin'){const now=new Date();now.setMinutes(now.getMinutes()-now.getTimezoneOffset());document.getElementById('ci-datetime').value=now.toISOString().slice(0,16);populateRoomSelect();}
 
@@ -2146,7 +2149,7 @@ function doLogin(){
   if(!firebaseReady){
     // Firebase not connected — warn but still allow login with cached passwords
     const txt=document.getElementById('fbStatusText');
-    if(txt){txt.textContent='⚠️ Offline mode — data sync nahi hogi';txt.style.color='#d9a83a';}
+    if(txt){txt.textContent='⚠️ Offline mode — data will not sync';txt.style.color='#d9a83a';}
   }
   if(u==='HOTEL PEACOCK'&&p===ownerPwd){
     currentRole='owner';
@@ -2203,16 +2206,16 @@ function doLogout(){
 
 // ── View-only guard ───────────────────────────────────────────
 function adminOnly(fn){
-  if(!canEdit()){showToast('Yeh action sirf Owner/Admin ke liye hai','red');return;}
+  if(!canEdit()){showToast('This action is for Owner/Admin only','red');return;}
   fn();
 }
 
 // ── Delete booking (password protected, Owner only) ──────────
 function promptDeleteBooking(i){
-  if(!isOwner()){showToast('Sirf Owner delete kar sakta hai','red');return;}
+  if(!isOwner()){showToast('Only Owner can delete','red');return;}
   pendingDeleteIndex=i;
   pendingDeleteExpId=null;
-  document.getElementById('deletePassDesc').textContent='Yeh booking permanently delete ho jaayegi. Aage badhne ke liye delete password enter karo.';
+  document.getElementById('deletePassDesc').textContent='This booking will be permanently deleted. Enter delete password to proceed.';
   document.getElementById('deletePassBtn').innerHTML='<i class="ti ti-trash"></i> Delete Booking';
   document.getElementById('deletePassInput').value='';
   document.getElementById('deletePassErr').style.display='none';
@@ -2222,10 +2225,10 @@ function promptDeleteBooking(i){
 
 // ── Delete expense (password protected, Owner only) ──────────
 function promptDeleteExpense(id){
-  if(!isOwner()){showToast('Sirf Owner delete kar sakta hai','red');return;}
+  if(!isOwner()){showToast('Only Owner can delete','red');return;}
   pendingDeleteExpId=id;
   pendingDeleteIndex=null;
-  document.getElementById('deletePassDesc').textContent='Yeh expense permanently delete ho jaayega. Aage badhne ke liye delete password enter karo.';
+  document.getElementById('deletePassDesc').textContent='This expense will be permanently deleted. Enter delete password to proceed.';
   document.getElementById('deletePassBtn').innerHTML='<i class="ti ti-trash"></i> Delete Expense';
   document.getElementById('deletePassInput').value='';
   document.getElementById('deletePassErr').style.display='none';
@@ -2237,7 +2240,7 @@ function promptDeleteExpense(id){
 let pendingEditBookingIndex=null;
 
 function promptEditBooking(i){
-  if(!canEdit()){showToast('Sirf Owner/Admin edit kar sakta hai','red');return;}
+  if(!canEdit()){showToast('Only Owner/Admin can edit','red');return;}
   pendingEditBookingIndex=i;
   document.getElementById('editBookingPassInput').value='';
   document.getElementById('editBookingPassErr').style.display='none';
@@ -2260,7 +2263,7 @@ function confirmEditBookingPass(){
 
 function openEditBookingForm(i){
   const b=bookings[i];if(!b)return;
-  const POPTS=`<option value="">-- Koi nahi --</option><option value="Cash">Cash</option><option value="UPI">UPI</option><option value="PhonePe">PhonePe</option><option value="Google Pay">Google Pay</option><option value="Card">Card</option><option value="Net Banking">Net Banking</option><optgroup label="── Online Booking ──"><option value="MakeMyTrip">MakeMyTrip (MMT)</option><option value="Agoda">Agoda</option><option value="Booking.com">Booking.com</option><option value="Cleartrip">Cleartrip</option><option value="Bravistay">Bravistay</option><option value="Hotel Zify">Hotel Zify</option><option value="Others">Others</option></optgroup>`;
+  const POPTS=`<option value="">-- None --</option><option value="Cash">Cash</option><option value="UPI">UPI</option><option value="PhonePe">PhonePe</option><option value="Google Pay">Google Pay</option><option value="Card">Card</option><option value="Net Banking">Net Banking</option><optgroup label="── Online Booking ──"><option value="MakeMyTrip">MakeMyTrip (MMT)</option><option value="Agoda">Agoda</option><option value="Booking.com">Booking.com</option><option value="Cleartrip">Cleartrip</option><option value="Bravistay">Bravistay</option><option value="Hotel Zify">Hotel Zify</option><option value="Others">Others</option></optgroup>`;
   const ciVal=b.checkin?(()=>{const d=new Date(b.checkin);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16);})():'';
   const coVal=b.checkout?(()=>{const d=new Date(b.checkout);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16);})():'';
   document.getElementById('editBookingFormContent').innerHTML=`
@@ -2295,7 +2298,7 @@ function saveEditBooking(i){
   const coRaw=document.getElementById('eb-checkout').value;
   const paymode=document.getElementById('eb-paymode').value;
   const idProof=document.getElementById('eb-id').value.trim();
-  if(!name||!mobile){showToast('Name aur Mobile required hai','red');return;}
+  if(!name||!mobile){showToast('Name and Mobile are required','red');return;}
   // Update booking
   b.customer=name;
   b.mobile=mobile;
@@ -2306,7 +2309,7 @@ function saveEditBooking(i){
   b.paymentMode=paymode||b.paymentMode;
   b.idProof=idProof;
   if(!coRaw)b.status='active';
-  // roomData bhi update karo agar active hai
+  // Also update roomData if active
   if(b.status==='active'&&roomData[room]&&roomData[room].customer){
     roomData[room].customer=name;
     roomData[room].mobile=mobile;
@@ -2329,7 +2332,7 @@ function saveEditBooking(i){
     try{localStorage.setItem('hms_editHistory',JSON.stringify(editHistory));}catch(e){}
   }
   saveData();closeOverlay('editBookingFormOverlay');renderAll();
-  showToast('✅ Booking successfully update ho gayi!');
+  showToast('✅ Booking updated successfully!');
 }
 
 
@@ -2345,15 +2348,15 @@ function confirmDelete(){
   if(pendingDeleteIndex!==null){
     bookings.splice(pendingDeleteIndex,1);
     saveData();renderHistoryTable();renderRevStats();renderStats();
-    showToast('Booking delete ho gayi');
+    showToast('Booking deleted');
   }else if(pendingDeleteExpId!==null){
     expenses=expenses.filter(e=>e.id!==pendingDeleteExpId);
     saveData();renderExpenses();renderRevStats();
-    showToast('Expense delete ho gaya');
+    showToast('Expense deleted');
   }else if(pendingDeleteTransferId!==null){
     transfers=transfers.filter(t=>t.id!==pendingDeleteTransferId);
     saveData();renderTransferTable();
-    showToast('Transfer record delete ho gaya');
+    showToast('Transfer record deleted');
   }
   closeOverlay('deletePassOverlay');
   pendingDeleteIndex=null;
@@ -2370,10 +2373,10 @@ const ROOM_TYPES={
 };
 
 function openTransferModal(r){
-  if(!canEdit()){showToast('Sirf Owner/Admin room transfer kar sakta hai','red');return;}
+  if(!canEdit()){showToast('Only Owner/Admin can transfer room','red');return;}
   const d=roomData[r];
-  if(!d||!d.customer){showToast('Is room mein koi guest nahi hai','red');return;}
-  // Available rooms list (same room bhi allow — price change ke liye)
+  if(!d||!d.customer){showToast('No guest found in this room','red');return;}
+  // Available rooms list (same room also allowed — for price change)
   const availableRooms=ROOMS.filter(x=>x===r||roomData[x].status==='available');
   const POPTS=`<option value="Cash">Cash</option><option value="UPI">UPI</option><option value="PhonePe">PhonePe</option><option value="Google Pay">Google Pay</option><option value="Card">Card</option><option value="Net Banking">Net Banking</option>`;
   const roomOptions=availableRooms.map(x=>{
@@ -2395,12 +2398,12 @@ function openTransferModal(r){
       </select>
     </div>
     <div id="tr-same-notice" style="display:none;background:rgba(212,160,23,.08);border:1px solid rgba(212,160,23,.25);border-radius:8px;padding:8px 12px;font-size:12px;margin-bottom:10px;color:var(--rm-accent)">
-      <i class="ti ti-info-circle"></i> Same room selected — sirf booking price update hogi, room change nahi hoga.
+      <i class="ti ti-info-circle"></i> Same room selected — only the booking price will be updated, room will not change.
     </div>
     <div class="form-group">
       <label class="form-label">New Booking Price/night (₹) *</label>
       <input class="form-input" id="tr-newPrice" type="number" placeholder="New price per night" value="${d.price||0}">
-      <div style="font-size:10px;color:var(--rm-muted);margin-top:3px">Old price: ₹${(d.price||0).toLocaleString('en-IN')} — naya price alag ho sakta hai</div>
+      <div style="font-size:10px;color:var(--rm-muted);margin-top:3px">Old price: ₹${(d.price||0).toLocaleString('en-IN')} — new price can be different</div>
     </div>
     <div class="form-group">
       <label class="form-label">Transfer Date & Time</label>
@@ -2412,7 +2415,7 @@ function openTransferModal(r){
     </div>
     <div style="background:rgba(63,166,108,.06);border:1px solid rgba(63,166,108,.2);border-radius:8px;padding:10px;margin-bottom:14px;font-size:12px" id="tr-preview">
       <div style="font-weight:500;color:var(--rm-green);margin-bottom:6px"><i class="ti ti-arrows-exchange"></i> Transfer Preview</div>
-      <div id="tr-preview-text" style="color:var(--rm-muted)">Room select karo aur price set karo…</div>
+      <div id="tr-preview-text" style="color:var(--rm-muted)">Select room and set price…</div>
     </div>
     <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,var(--rm-accent),var(--rm-accent3))" onclick="doRoomTransfer(${r})">
       <i class="ti ti-arrows-exchange"></i> Confirm Transfer
@@ -2439,25 +2442,25 @@ function updateTransferPreview(fromRoom){
   const el=document.getElementById('tr-preview-text');
   if(!el)return;
   if(toRoom===fromRoom){
-    el.innerHTML=`Room <b>${fromRoom}</b> mein hi rahega &nbsp;|&nbsp; Price: <span style="color:var(--rm-red)">₹${oldPrice.toLocaleString('en-IN')}</span> → <span style="color:var(--rm-green)">₹${newPrice.toLocaleString('en-IN')}</span>/night`;
+    el.innerHTML=`Room <b>${fromRoom}</b> will stay in &nbsp;|&nbsp; Price: <span style="color:var(--rm-red)">₹${oldPrice.toLocaleString('en-IN')}</span> → <span style="color:var(--rm-green)">₹${newPrice.toLocaleString('en-IN')}</span>/night`;
   }else{
     el.innerHTML=`Room <b>${fromRoom}</b> → Room <b>${toRoom}</b> &nbsp;|&nbsp; Price: <span style="color:var(--rm-red)">₹${oldPrice.toLocaleString('en-IN')}</span> → <span style="color:var(--rm-green)">₹${newPrice.toLocaleString('en-IN')}</span>/night`;
   }
 }
 
 function doRoomTransfer(fromRoom){
-  if(!canEdit()){showToast('Sirf Owner/Admin transfer kar sakta hai','red');return;}
+  if(!canEdit()){showToast('Only Owner/Admin can transfer','red');return;}
   const d=roomData[fromRoom];
   const toRoom=parseInt(document.getElementById('tr-toRoom')?.value||'0');
   const newPrice=parseFloat(document.getElementById('tr-newPrice')?.value)||0;
   const dt=document.getElementById('tr-datetime')?.value||new Date().toISOString().slice(0,16);
   const note=document.getElementById('tr-note')?.value.trim()||'';
-  if(!toRoom){showToast('Room select karo','red');return;}
-  if(!newPrice||newPrice<=0){showToast('Valid price enter karo','red');return;}
+  if(!toRoom){showToast('Please select a room','red');return;}
+  if(!newPrice||newPrice<=0){showToast('Please enter a valid price','red');return;}
   const oldPrice=d.price||0;
   const isSameRoom=toRoom===fromRoom;
 
-  // Transfer record save karo
+  // Save transfer record
   transfers.push({
     id:Date.now(),
     fromRoom,toRoom,
@@ -2469,15 +2472,15 @@ function doRoomTransfer(fromRoom){
   });
 
   if(isSameRoom){
-    // ── Same room: sirf price update, koi naya booking entry nahi ──
-    // Purani active booking ko internal price-change segment banao
+    // ── Same room: price update only, no new booking entry ──
+    // Make old active booking an internal price-change segment
     const activeBooking=bookings.find(b=>b.room===fromRoom&&b.status==='active');
     if(activeBooking){
-      // Purani booking ko 'transferred' mark karo (segment ke roop mein)
+      // Mark old booking as 'transferred' (as a segment)
       activeBooking.status='transferred';
       activeBooking.checkout=dt;
       activeBooking.transferredTo=fromRoom;
-      // Naya segment same room, new price, same transferredFrom chain maintain karo
+      // New segment: same room, new price, maintain same transferredFrom chain
       bookings.push({
         room:fromRoom,
         customer:d.customer,
@@ -2492,7 +2495,7 @@ function doRoomTransfer(fromRoom){
         transferredFrom:fromRoom  // same room, price changed
       });
     }
-    // roomData mein sirf price update
+    // Only update price in roomData
     roomData[fromRoom].price=newPrice;
     showToast(`✅ Room ${fromRoom} — price update: ₹${oldPrice.toLocaleString('en-IN')} → ₹${newPrice.toLocaleString('en-IN')}/night`);
 
@@ -2545,7 +2548,7 @@ function renderTransferTable(){
   const tbody=document.getElementById('transferTbody');
   if(!tbody)return;
   if(!rows.length){
-    tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;color:var(--rm-muted);padding:20px"><i class="ti ti-arrows-exchange"></i> Koi transfer record nahi mila</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;color:var(--rm-muted);padding:20px"><i class="ti ti-arrows-exchange"></i> No transfer records found</td></tr>`;
     return;
   }
   tbody.innerHTML=rows.slice().reverse().map(t=>{
@@ -2568,11 +2571,11 @@ function renderTransferTable(){
 }
 
 function promptDeleteTransfer(id){
-  if(!isOwner()){showToast('Sirf Owner delete kar sakta hai','red');return;}
+  if(!isOwner()){showToast('Only Owner can delete','red');return;}
   pendingDeleteTransferId=id;
   pendingDeleteIndex=null;
   pendingDeleteExpId=null;
-  document.getElementById('deletePassDesc').textContent='Yeh transfer record permanently delete ho jaayega. Aage badhne ke liye delete password enter karo.';
+  document.getElementById('deletePassDesc').textContent='This transfer record will be permanently deleted. Enter delete password to proceed.';
   document.getElementById('deletePassBtn').innerHTML='<i class="ti ti-trash"></i> Delete Transfer Record';
   document.getElementById('deletePassInput').value='';
   document.getElementById('deletePassErr').style.display='none';
@@ -2598,18 +2601,18 @@ function clearAllDataCore(){
   }catch(e){}
   // Render with cleared data first
   renderAll();
-  showToast('🔄 Data clear ho raha hai...');
+  showToast('🔄 Clearing data...');
   // Push cleared state to Firebase
   const clearPayload={roomData,bookings:[],customers:{},expenses:[],transfers:[]};
   hotelRef.set(clearPayload).then(()=>{
-    showToast('✅ Saara data successfully delete ho gaya!');
+    showToast('✅ All data deleted successfully!');
   }).catch(e=>{
     console.warn('Firebase clear failed',e);
-    showToast('⚠️ Firebase clear fail hua — internet check karo aur dobara try karo','red');
+    showToast('⚠️ Firebase clear failed — check your internet and try again','red');
   });
 }
 function clearAllData(){
-  if(!isOwner()){showToast('Sirf Owner yeh kar sakta hai','red');return;}
+  if(!isOwner()){showToast('Only Owner can do this','red');return;}
   const p=document.getElementById('clearAllPass')?.value||'';
   const ownerPwd=getPwd('owner','peacock835');
   if(p!==ownerPwd){
@@ -2622,12 +2625,12 @@ function clearAllData(){
   clearAllDataCore();
 }
 function clearAllDataFromDashboard(){
-  if(!isOwner()){showToast('Sirf Owner yeh kar sakta hai','red');return;}
-  if(!confirm('⚠️ Yeh saari bookings, customers, expenses aur room history PERMANENTLY delete kar dega — Firebase aur local dono se. Wapas nahi ho sakta. Aage badhe?'))return;
-  const p=prompt('Confirm karne ke liye Owner password daalo:');
+  if(!isOwner()){showToast('Only Owner can do this','red');return;}
+  if(!confirm('⚠️ This will PERMANENTLY delete all bookings, customers, expenses and room history — from both Firebase and local. This cannot be undone. Proceed?'))return;
+  const p=prompt('Enter owner password to confirm:');
   if(p===null)return;
   const ownerPwd=getPwd('owner','peacock835');
-  if(p!==ownerPwd){showToast('Galat password!','red');return;}
+  if(p!==ownerPwd){showToast('Wrong password!','red');return;}
   clearAllDataCore();
 }
 
@@ -2638,42 +2641,42 @@ function changePassword(type){
     const old=document.getElementById('chg-old-owner').value;
     const nw=document.getElementById('chg-new-owner').value;
     const cf=document.getElementById('chg-confirm-owner').value;
-    if(old!==ownerPwd){showToast('Current password galat hai','red');return;}
-    if(!nw||nw.length<4){showToast('Naya password kam se kam 4 characters ka hona chahiye','red');return;}
-    if(nw!==cf){showToast('Passwords match nahi karte','red');return;}
+    if(old!==ownerPwd){showToast('Current password is incorrect','red');return;}
+    if(!nw||nw.length<4){showToast('New password must be at least 4 characters','red');return;}
+    if(nw!==cf){showToast('Passwords do not match','red');return;}
     setPwd('owner',nw);
     document.getElementById('chg-old-owner').value='';document.getElementById('chg-new-owner').value='';document.getElementById('chg-confirm-owner').value='';
-    showToast('Owner password update ho gaya!');
+    showToast('Owner password updated!');
   }else if(type==='admin'){
     const old=document.getElementById('chg-old-admin').value;
     const nw=document.getElementById('chg-new-admin').value;
     const cf=document.getElementById('chg-confirm-admin').value;
-    if(old!==ownerPwd){showToast('Owner password galat hai','red');return;}
-    if(!nw||nw.length<4){showToast('Naya password kam se kam 4 characters ka hona chahiye','red');return;}
-    if(nw!==cf){showToast('Passwords match nahi karte','red');return;}
+    if(old!==ownerPwd){showToast('Owner password is incorrect','red');return;}
+    if(!nw||nw.length<4){showToast('New password must be at least 4 characters','red');return;}
+    if(nw!==cf){showToast('Passwords do not match','red');return;}
     setPwd('admin',nw);
     document.getElementById('chg-old-admin').value='';document.getElementById('chg-new-admin').value='';document.getElementById('chg-confirm-admin').value='';
-    showToast('Admin password update ho gaya!');
+    showToast('Admin password updated!');
   }else if(type==='view'){
     const old=document.getElementById('chg-old-view').value;
     const nw=document.getElementById('chg-new-view').value;
     const cf=document.getElementById('chg-confirm-view').value;
-    if(old!==ownerPwd){showToast('Owner password galat hai','red');return;}
-    if(!nw||nw.length<4){showToast('Naya password kam se kam 4 characters ka hona chahiye','red');return;}
-    if(nw!==cf){showToast('Passwords match nahi karte','red');return;}
+    if(old!==ownerPwd){showToast('Owner password is incorrect','red');return;}
+    if(!nw||nw.length<4){showToast('New password must be at least 4 characters','red');return;}
+    if(nw!==cf){showToast('Passwords do not match','red');return;}
     setPwd('view',nw);
     document.getElementById('chg-old-view').value='';document.getElementById('chg-new-view').value='';document.getElementById('chg-confirm-view').value='';
-    showToast('View password update ho gaya!');
+    showToast('View password updated!');
   }else if(type==='delete'){
     const old=document.getElementById('chg-old-del').value;
     const nw=document.getElementById('chg-new-del').value;
     const cf=document.getElementById('chg-confirm-del').value;
-    if(old!==ownerPwd){showToast('Owner password galat hai','red');return;}
-    if(!nw||nw.length<4){showToast('Naya password kam se kam 4 characters ka hona chahiye','red');return;}
-    if(nw!==cf){showToast('Passwords match nahi karte','red');return;}
+    if(old!==ownerPwd){showToast('Owner password is incorrect','red');return;}
+    if(!nw||nw.length<4){showToast('New password must be at least 4 characters','red');return;}
+    if(nw!==cf){showToast('Passwords do not match','red');return;}
     setPwd('delete',nw);
     document.getElementById('chg-old-del').value='';document.getElementById('chg-new-del').value='';document.getElementById('chg-confirm-del').value='';
-    showToast('Delete password update ho gaya!');
+    showToast('Delete password updated!');
   }
 }
 
@@ -2707,7 +2710,7 @@ function renderEditHistory(){
   const tbody=document.getElementById('editHistTbody');
   if(!tbody)return;
   if(!rows.length){
-    tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;color:var(--rm-muted);padding:20px"><i class="ti ti-edit"></i> Koi edit record nahi mila</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;color:var(--rm-muted);padding:20px"><i class="ti ti-edit"></i> No edit records found</td></tr>`;
     return;
   }
   tbody.innerHTML=rows.slice().reverse().map(e=>`<tr>
@@ -2731,7 +2734,7 @@ function renderExpenseEditHistory(){
   const tbody=document.getElementById('expEditHistTbody');
   if(!tbody)return;
   if(!rows.length){
-    tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;color:var(--rm-muted);padding:20px"><i class="ti ti-receipt-2"></i> Koi expense edit record nahi mila</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;color:var(--rm-muted);padding:20px"><i class="ti ti-receipt-2"></i> No expense edit records found</td></tr>`;
     return;
   }
   tbody.innerHTML=rows.slice().reverse().map(e=>`<tr>
@@ -2746,7 +2749,7 @@ function renderExpenseEditHistory(){
 
 // ── Direct Entry (add booking without check-in flow) ──────────
 function addDirectEntry(){
-  if(!canEdit()){showToast('Sirf Owner/Admin direct entry add kar sakta hai','red');return;}
+  if(!canEdit()){showToast('Only Owner/Admin can add direct entry','red');return;}
   const room=parseInt(document.getElementById('de-room')?.value)||0;
   const name=document.getElementById('de-name')?.value.trim()||'';
   const mobile=document.getElementById('de-mobile')?.value.trim()||'';
@@ -2756,9 +2759,9 @@ function addDirectEntry(){
   const paymode=document.getElementById('de-paymode')?.value||'';
   const paid=parseFloat(document.getElementById('de-paid')?.value)||0;
   const status=document.getElementById('de-status')?.value||'active';
-  if(!room||!name||!mobile){showToast('Room, Name aur Mobile required hai','red');return;}
-  if(!/^\d{10}$/.test(mobile)){showToast('10-digit mobile number enter karo','red');return;}
-  if(!price||price<=0){showToast('Price enter karo','red');return;}
+  if(!room||!name||!mobile){showToast('Room, Name and Mobile are required','red');return;}
+  if(!/^\d{10}$/.test(mobile)){showToast('Enter a 10-digit mobile number','red');return;}
+  if(!price||price<=0){showToast('Please enter a price','red');return;}
   const ciISO=checkin?new Date(checkin).toISOString().slice(0,16):new Date().toISOString().slice(0,16);
   const coISO=checkout?new Date(checkout).toISOString().slice(0,16):null;
   const initPays=paymode&&paid>0?[{mode:paymode,amount:paid,time:ciISO}]:[];
@@ -2788,7 +2791,7 @@ function addDirectEntry(){
   document.getElementById('de-paymode').value='';
   document.getElementById('de-checkout').value='';
   saveData();renderAll();
-  showToast(`✅ Direct entry add ho gayi — Room ${room}, ${name}`);
+  showToast(`✅ Direct entry added — Room ${room}, ${name}`);
 }
 
 
@@ -2810,7 +2813,7 @@ try{const eeh=localStorage.getItem('hms_expenseEditHistory');if(eeh)expenseEditH
 
   const label=document.createElement('div');
   label.style.cssText='font-size:10px;color:var(--rm-muted);font-weight:600;padding:2px 6px 6px;letter-spacing:.5px;text-transform:uppercase';
-  label.textContent='Minutes select karo';
+  label.textContent='Select minutes';
   picker.appendChild(label);
 
   const grid=document.createElement('div');
