@@ -2105,22 +2105,27 @@ function openInvoiceForCustomer(mob){
 
 function updateClock(){document.getElementById('clockEl').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short'})+' '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});}
 
-// ── Password Store (Firebase + localStorage synced — works on ALL devices) ──────────────────
+// ── Password Store (Firebase only — NO passwords stored in this file) ──────────────────
 const pwdRef=db.ref('hotelPasswords');
-let _pwdCache={owner:'peacock835',admin:'staff835',view:'hotel835',delete:'admin835'};
+
+// Passwords are ONLY stored in Firebase — never in this file
+// _pwdCache starts empty; filled when Firebase responds
+let _pwdCache={owner:'',admin:'',view:'',delete:''};
+let _pwdLoaded=false; // true once Firebase has responded
 
 // Load passwords from Firebase on startup
 pwdRef.on('value',snap=>{
   const val=snap.val();
   if(val){
-    _pwdCache.owner=val.owner||'peacock835';
-    _pwdCache.admin=val.admin||'staff835';
-    _pwdCache.view=val.view||'hotel835';
-    _pwdCache.delete=val.delete||'admin835';
+    _pwdCache.owner=val.owner||'';
+    _pwdCache.admin=val.admin||'';
+    _pwdCache.view=val.view||'';
+    _pwdCache.delete=val.delete||'';
   }
+  _pwdLoaded=true;
 });
 
-function getPwd(key,def){return _pwdCache[key]||def;}
+function getPwd(key){return _pwdCache[key]||'';}
 function setPwd(key,val){
   _pwdCache[key]=val;
   // Save to Firebase so ALL devices get updated password
@@ -2143,11 +2148,11 @@ function roleLabel(){return currentRole==='owner'?'Owner':currentRole==='admin'?
 function doLogin(){
   const u=document.getElementById('loginUser').value.trim().toUpperCase();
   const p=document.getElementById('loginPass').value;
-  const ownerPwd=getPwd('owner','peacock835');
-  const adminPwd=getPwd('admin','staff835');
-  const viewPwd=getPwd('view','hotel835');
-  if(!firebaseReady){
-    // Firebase not connected — warn but still allow login with cached passwords
+  const ownerPwd=getPwd('owner');
+  const adminPwd=getPwd('admin');
+  const viewPwd=getPwd('view');
+  if(!firebaseReady||!_pwdLoaded){
+    // Firebase not connected or passwords not yet loaded — warn but allow with cached/default passwords
     const txt=document.getElementById('fbStatusText');
     if(txt){txt.textContent='⚠️ Offline mode — data will not sync';txt.style.color='#d9a83a';}
   }
@@ -2250,8 +2255,8 @@ function promptEditBooking(i){
 
 function confirmEditBookingPass(){
   const p=document.getElementById('editBookingPassInput').value;
-  const ownerPwd=getPwd('owner','peacock835');
-  const adminPwd=getPwd('admin','staff835');
+  const ownerPwd=getPwd('owner');
+  const adminPwd=getPwd('admin');
   if(p!==ownerPwd&&p!==adminPwd){
     document.getElementById('editBookingPassErr').style.display='block';
     document.getElementById('editBookingPassInput').value='';
@@ -2339,7 +2344,7 @@ function saveEditBooking(i){
 
 function confirmDelete(){
   const p=document.getElementById('deletePassInput').value;
-  const delPwd=getPwd('delete','admin835');
+  const delPwd=getPwd('delete');
   if(p!==delPwd){
     document.getElementById('deletePassErr').style.display='block';
     document.getElementById('deletePassInput').value='';
@@ -2614,7 +2619,7 @@ function clearAllDataCore(){
 function clearAllData(){
   if(!isOwner()){showToast('Only Owner can do this','red');return;}
   const p=document.getElementById('clearAllPass')?.value||'';
-  const ownerPwd=getPwd('owner','peacock835');
+  const ownerPwd=getPwd('owner');
   if(p!==ownerPwd){
     document.getElementById('clearAllErr').style.display='block';
     document.getElementById('clearAllPass').value='';
@@ -2629,14 +2634,14 @@ function clearAllDataFromDashboard(){
   if(!confirm('⚠️ This will PERMANENTLY delete all bookings, customers, expenses and room history — from both Firebase and local. This cannot be undone. Proceed?'))return;
   const p=prompt('Enter owner password to confirm:');
   if(p===null)return;
-  const ownerPwd=getPwd('owner','peacock835');
+  const ownerPwd=getPwd('owner');
   if(p!==ownerPwd){showToast('Wrong password!','red');return;}
   clearAllDataCore();
 }
 
 // ── Password Change ───────────────────────────────────────────
 function changePassword(type){
-  const ownerPwd=getPwd('owner','peacock835');
+  const ownerPwd=getPwd('owner');
   if(type==='owner'){
     const old=document.getElementById('chg-old-owner').value;
     const nw=document.getElementById('chg-new-owner').value;
